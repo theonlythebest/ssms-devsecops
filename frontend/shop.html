@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSMS Market — Click & Collect</title>
+    <link rel="stylesheet" href="/static/shop.css" />
+</head>
+<body>
+    <header class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="/shop" aria-label="SSMS Market">
+                <span class="brand-icon">🛒</span>
+                <span class="brand-name">SSMS Market</span>
+            </a>
+            <div class="search-bar">
+                <span class="search-icon">⌕</span>
+                <input id="search" type="search" placeholder="Rechercher des produits, fruits, viandes…" autocomplete="off" />
+            </div>
+            <div class="nav-actions">
+                <button class="nav-cart" id="open-cart" aria-label="Ouvrir le panier">
+                    <span class="cart-icon">🛍️</span>
+                    <span class="cart-badge hidden" id="cart-badge">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-text">
+                <h1>Les saveurs du <span class="hero-accent">monde</span> chez vous</h1>
+                <p>Préparez votre panier en ligne, payez, puis venez le récupérer en magasin sans attendre. Click & Collect intelligent.</p>
+                <button class="btn-primary" id="hero-shop-now">Acheter maintenant</button>
+            </div>
+            <div class="hero-illustration" aria-hidden="true">
+                <div class="hero-bg"></div>
+            </div>
+        </section>
+
+        <section class="categories">
+            <h2>Nos catégories</h2>
+            <div class="category-grid" id="category-grid"></div>
+        </section>
+
+        <section class="products" id="products">
+            <div class="products-header">
+                <h2 id="products-title">Tous les produits</h2>
+                <span class="products-meta" id="products-meta"></span>
+            </div>
+            <div class="product-grid" id="product-grid">
+                <div class="empty">Chargement des produits…</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <span>SSMS Market · Smart Click &amp; Collect</span>
+        <span><a href="/" class="footer-link">Tableau de bord admin</a></span>
+    </footer>
+
+    <!-- Cart drawer -->
+    <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+        <div class="cart-overlay" id="cart-overlay"></div>
+        <div class="cart-panel" role="dialog" aria-label="Votre panier">
+            <div class="cart-header">
+                <h2>Votre panier <span class="cart-count-badge" id="cart-count">0</span></h2>
+                <button class="cart-close" id="close-cart" aria-label="Fermer">×</button>
+            </div>
+            <div class="cart-items" id="cart-items"></div>
+            <div class="cart-summary">
+                <div class="row"><span>Sous-total</span><span id="cart-subtotal">€0.00</span></div>
+                <div class="row"><span>Taxes (10 %)</span><span id="cart-tax">€0.00</span></div>
+                <div class="row total"><span>Total</span><span id="cart-total">€0.00</span></div>
+                <button class="btn-primary btn-block" id="checkout-btn" disabled>Passer la commande</button>
+                <p class="cart-note">Paiement en ligne simulé · Retrait en magasin avec votre numéro de commande.</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Success modal -->
+    <div class="modal" id="success-modal" hidden>
+        <div class="modal-overlay" id="modal-overlay"></div>
+        <div class="modal-card" role="dialog" aria-label="Commande confirmée">
+            <div class="modal-icon">✓</div>
+            <h2>Commande confirmée</h2>
+            <p>Votre commande est en cours de préparation. Présentez ce numéro à l'accueil du magasin :</p>
+            <div class="order-id" id="order-id-display"></div>
+            <p class="muted">Total réglé : <strong id="order-total-display"></strong></p>
+            <p class="muted">Le personnel prépare votre panier. Vous recevrez une confirmation lorsqu'il sera prêt à être retiré.</p>
+            <button class="btn-primary btn-block" id="modal-close">Continuer mes achats</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast" hidden></div>
+
+    <script src="/static/shop.js"></script>
+</body>
+</html>

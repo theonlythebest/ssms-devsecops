@@ -1,0 +1,74 @@
+
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ssms_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ssms
+      POSTGRES_PASSWORD: ssms_secret
+      POSTGRES_DB: ssms
+    volumes:
+      - ssms_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ssms -d ssms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: ssms_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ssms:ssms_secret@db:5432/ssms
+      JWT_SECRET: change-me-in-production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: "60"
+      SEED_ON_STARTUP: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./frontend:/app/frontend:ro
+
+  frontend:
+    build: ./frontend
+    container_name: ssms_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+  prometheus:
+    image: prom/prometheus
+    container_name: ssms_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: ssms_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus 
+
+volumes:
+  ssms_pgdata:
+
+
+
+

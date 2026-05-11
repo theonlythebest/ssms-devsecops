@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0e1116" />
+    <title>SSMS — Barcode Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #0e1116;
+            --panel: #161b22;
+            --border: #2a313c;
+            --text: #e6edf3;
+            --muted: #9aa6b2;
+            --accent: #4fc3f7;
+            --ok: #22c55e;
+            --warn: #f59e0b;
+            --err: #ef4444;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            margin: 0; padding: 0;
+            background: var(--bg); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100dvh;
+            overscroll-behavior: none;
+        }
+        header {
+            position: sticky; top: 0; z-index: 5;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px;
+            background: linear-gradient(180deg, #0c1117, #0e1116);
+            border-bottom: 1px solid var(--border);
+        }
+        header .brand {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 700; letter-spacing: .5px;
+        }
+        header .brand .dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 12px var(--accent);
+        }
+        main {
+            padding: 16px;
+            max-width: 540px;
+            margin: 0 auto;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.35);
+        }
+        .card h2 { margin: 0 0 10px 0; font-size: 14px; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        input, select, button {
+            background: #0c1117; color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 10px 12px; font-size: 14px; outline: none;
+            font-family: inherit;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+        input { flex: 1; min-width: 0; }
+        button {
+            background: var(--accent); color: #04121b;
+            font-weight: 700; cursor: pointer; border: none;
+            transition: filter .15s ease, transform .05s ease;
+        }
+        button:hover { filter: brightness(1.08); }
+        button:active { transform: scale(.98); }
+        button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); font-weight: 500; }
+        button.danger { background: var(--err); color: #fff; }
+        button[disabled] { opacity: .5; cursor: not-allowed; }
+
+        #reader {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 4/3;
+        }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+
+        .scan-state {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            background: #0c1117;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            min-height: 42px;
+            transition: background .25s ease, border-color .25s ease;
+        }
+        .scan-state.flash-ok    { background: rgba(34,197,94,.12);  border-color: var(--ok);   color: #d1fae5; }
+        .scan-state.flash-err   { background: rgba(239,68,68,.12);  border-color: var(--err);  color: #fee2e2; }
+        .scan-state.flash-warn  { background: rgba(245,158,11,.12); border-color: var(--warn); color: #fef3c7; }
+        .scan-state .barcode { font-size: 18px; color: var(--text); letter-spacing: 1px; }
+        .scan-state .label { display: block; font-size: 11px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+
+        .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+        .seg button {
+            background: transparent; color: var(--muted);
+            font-weight: 600; padding: 6px 14px; border-radius: 999px;
+            font-size: 13px;
+        }
+        .seg button.active { background: var(--accent); color: #04121b; }
+
+        .log { max-height: 180px; overflow: auto; }
+        .log-entry {
+            display: flex; justify-content: space-between; gap: 8px;
+            padding: 8px 0; border-bottom: 1px dashed var(--border);
+            font-size: 13px;
+        }
+        .log-entry:last-child { border-bottom: none; }
+        .log-entry .product { font-weight: 600; }
+        .log-entry .qty { color: var(--accent); font-weight: 700; }
+        .log-entry .ts { color: var(--muted); font-size: 11px; }
+        .log-entry.err .product { color: var(--err); }
+
+        .auth-status { font-size: 12px; padding: 4px 10px; border-radius: 999px;
+            border: 1px solid var(--border); color: var(--muted); }
+        .auth-status.ok { color: var(--ok); border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.08); }
+        .auth-status.no { color: var(--warn); border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.08); }
+
+        details { margin-top: 8px; }
+        details > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 6px 0; }
+        details > summary:hover { color: var(--text); }
+
+        .toast {
+            position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(120%);
+            background: var(--panel); color: var(--text); border: 1px solid var(--border);
+            padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,.5);
+            transition: transform .25s ease, opacity .25s ease;
+            opacity: 0;
+            z-index: 50;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.ok  { border-color: var(--ok);  background: rgba(34,197,94,.15); }
+        .toast.err { border-color: var(--err); background: rgba(239,68,68,.15); }
+
+        @media (max-width: 380px) {
+            .row.api-row > input { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand"><span class="dot"></span> SSMS Scanner</div>
+        <span id="auth-status" class="auth-status no">Not authenticated</span>
+    </header>
+
+    <main>
+        <!-- Auth -->
+        <section class="card">
+            <h2>Authentication</h2>
+            <details id="auth-details">
+                <summary id="auth-summary">Sign in or paste a JWT token</summary>
+                <div class="row" style="margin-top: 10px;">
+                    <input id="login-user" placeholder="Username (e.g. admin)" autocomplete="username" />
+                    <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" />
+                    <button id="btn-login">Login</button>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <input id="token-input" placeholder="…or paste JWT token" autocomplete="off" />
+                    <button id="btn-save-token" class="ghost">Save</button>
+                    <button id="btn-clear-token" class="ghost">Clear</button>
+                </div>
+            </details>
+        </section>
+
+        <!-- API base -->
+        <section class="card">
+            <h2>API endpoint</h2>
+            <div class="row api-row">
+                <input id="api-base" placeholder="API base URL (e.g. https://my-ssms.example.com)" />
+                <button id="btn-save-api" class="ghost">Save</button>
+            </div>
+            <p class="auth-status" style="display:block;margin-top:8px;">
+                Tip: blank uses the same origin that served this page.
+            </p>
+        </section>
+
+        <!-- Action toggle -->
+        <section class="card">
+            <h2>Action</h2>
+            <div class="seg" role="tablist" aria-label="Scan action">
+                <button id="action-sell" class="active" data-action="sell">SELL −1</button>
+                <button id="action-restock" data-action="restock">RESTOCK +1</button>
+            </div>
+        </section>
+
+        <!-- Scanner -->
+        <section class="card">
+            <h2>Camera</h2>
+            <div id="reader"></div>
+            <div class="row" style="margin-top: 10px;">
+                <select id="camera-select" style="flex:1;min-width:0;"></select>
+                <button id="btn-start">Start</button>
+                <button id="btn-stop" class="ghost" disabled>Stop</button>
+            </div>
+            <div id="scan-state" class="scan-state">
+                <span class="label">Last scan</span>
+                <span id="scan-text">Press <strong>Start</strong> to enable the camera.</span>
+            </div>
+        </section>
+
+        <!-- Log -->
+        <section class="card">
+            <h2>History</h2>
+            <div id="log" class="log"></div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+    "use strict";
+
+    // ---------- config / persistence ----------
+    const LS_TOKEN = "ssms.token";
+    const LS_API   = "ssms.api_base";
+    const COOLDOWN_MS = 1800;
+
+    let token   = localStorage.getItem(LS_TOKEN) || "";
+    let apiBase = localStorage.getItem(LS_API) || "";
+    let action  = "sell";
+    let scanner = null;
+    let lastScan = { code: "", at: 0 };
+    let inflight = false;
+
+    const $ = (id) => document.getElementById(id);
+
+    // ---------- auth UI ----------
+    function refreshAuthBadge() {
+        const el = $("auth-status");
+        if (token) {
+            el.textContent = "Authenticated";
+            el.className = "auth-status ok";
+            $("auth-summary").textContent = "✓ Authenticated — change credentials";
+        } else {
+            el.textContent = "Not authenticated";
+            el.className = "auth-status no";
+            $("auth-summary").textContent = "Sign in or paste a JWT token";
+        }
+    }
+
+    $("btn-login").addEventListener("click", async () => {
+        const u = $("login-user").value.trim();
+        const p = $("login-pass").value;
+        if (!u || !p) return toast("Enter username and password.", "err");
+        try {
+            const body = new URLSearchParams({ username: u, password: p });
+            const res = await fetch(apiUrl("/auth/login"), {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: body.toString(),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Login failed");
+            token = data.access_token;
+            localStorage.setItem(LS_TOKEN, token);
+            $("token-input").value = "";
+            $("login-pass").value = "";
+            refreshAuthBadge();
+            toast("Signed in.", "ok");
+        } catch (e) {
+            toast("Login error: " + e.message, "err");
+        }
+    });
+
+    $("btn-save-token").addEventListener("click", () => {
+        const v = $("token-input").value.trim();
+        if (!v) return toast("Paste a token first.", "err");
+        token = v;
+        localStorage.setItem(LS_TOKEN, token);
+        $("token-input").value = "";
+        refreshAuthBadge();
+        toast("Token saved.", "ok");
+    });
+
+    $("btn-clear-token").addEventListener("click", () => {
+        token = "";
+        localStorage.removeItem(LS_TOKEN);
+        refreshAuthBadge();
+        toast("Token cleared.", "ok");
+    });
+
+    // ---------- API base ----------
+    $("api-base").value = apiBase;
+    $("btn-save-api").addEventListener("click", () => {
+        apiBase = $("api-base").value.trim().replace(/\/+$/, "");
+        localStorage.setItem(LS_API, apiBase);
+        toast("API base saved.", "ok");
+    });
+    function apiUrl(path) { return (apiBase || "") + path; }
+
+    // ---------- action toggle ----------
+    document.querySelectorAll(".seg button").forEach((b) => {
+        b.addEventListener("click", () => {
+            document.querySelectorAll(".seg button").forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            action = b.dataset.action;
+        });
+    });
+
+    // ---------- toast ----------
+    let toastTimer = null;
+    function toast(message, kind = "ok") {
+        const t = $("toast");
+        t.textContent = message;
+        t.className = "toast show " + kind;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.className = "toast " + kind; }, 2200);
+    }
+
+    // ---------- scan-state UI ----------
+    function setScanState(text, kind = "") {
+        const s = $("scan-state");
+        s.className = "scan-state" + (kind ? " flash-" + kind : "");
+        s.innerHTML = `<span class="label">Last scan</span><span class="barcode">${text}</span>`;
+    }
+
+    // ---------- log ----------
+    function logEntry({ ok, barcode, product, qty, msg }) {
+        const el = document.createElement("div");
+        el.className = "log-entry" + (ok ? "" : " err");
+        const left = ok
+            ? `<span class="product">${product}</span> <span style="color:var(--muted);">· ${barcode} · ${action}</span>`
+            : `<span class="product">${msg || "Error"}</span> <span style="color:var(--muted);">· ${barcode}</span>`;
+        const right = ok
+            ? `<span class="qty">→ ${qty}</span>`
+            : "";
+        const ts = new Date().toLocaleTimeString();
+        el.innerHTML = `<div>${left}<div class="ts">${ts}</div></div><div>${right}</div>`;
+        const log = $("log");
+        log.prepend(el);
+        while (log.children.length > 25) log.removeChild(log.lastChild);
+    }
+
+    // ---------- feedback (sound + vibration) ----------
+    let audioCtx = null;
+    function beep(freq = 880, durMs = 90) {
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = "sine"; o.frequency.value = freq;
+            g.gain.value = 0.06;
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start();
+            o.stop(audioCtx.currentTime + durMs / 1000);
+        } catch (_) {}
+    }
+    function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
+    // ---------- POST /stock/scan-barcode ----------
+    async function sendScan(barcode) {
+        if (!token) {
+            setScanState(barcode + " · not authenticated", "err");
+            toast("Authenticate first.", "err");
+            beep(220, 200); vibrate(120);
+            logEntry({ ok: false, barcode, msg: "Not authenticated" });
+            return;
+        }
+        if (inflight) return;
+        inflight = true;
+        try {
+            const url = apiUrl(`/stock/scan-barcode?barcode=${encodeURIComponent(barcode)}&action=${action}`);
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + token, "Accept": "application/json" },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const msg = (data && data.detail) || `HTTP ${res.status}`;
+                setScanState(`${barcode} · ${msg}`, "err");
+                toast("✗ " + msg, "err");
+                beep(220, 200); vibrate(120);
+                logEntry({ ok: false, barcode, msg });
+                if (res.status === 401) {
+                    token = ""; localStorage.removeItem(LS_TOKEN); refreshAuthBadge();
+                }
+                return;
+            }
+            setScanState(`${barcode} · ${data.product} → qty ${data.new_quantity}`, "ok");
+            toast(`✓ ${data.product} (qty ${data.new_quantity})`, "ok");
+            beep(880, 90); vibrate(40);
+            logEntry({ ok: true, barcode, product: data.product, qty: data.new_quantity });
+        } catch (e) {
+            setScanState(barcode + " · network error", "err");
+            toast("Network error: " + e.message, "err");
+            beep(220, 200); vibrate(120);
+            logEntry({ ok: false, barcode, msg: "Network: " + e.message });
+        } finally {
+            inflight = false;
+        }
+    }
+
+    // ---------- camera / scanner ----------
+    async function listCameras() {
+        try {
+            const cams = await Html5Qrcode.getCameras();
+            const sel = $("camera-select");
+            sel.innerHTML = "";
+            cams.forEach((c) => {
+                const o = document.createElement("option");
+                o.value = c.id; o.textContent = c.label || c.id;
+                sel.appendChild(o);
+            });
+            // Prefer rear camera
+            const rear = cams.find((c) => /back|rear|environment/i.test(c.label));
+            if (rear) sel.value = rear.id;
+            return cams;
+        } catch (e) {
+            toast("Camera enumeration failed: " + e.message, "err");
+            return [];
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        const code = (decodedText || "").trim();
+        if (!code) return;
+        const now = Date.now();
+        // Debounce: same barcode within cooldown window is ignored
+        if (code === lastScan.code && (now - lastScan.at) < COOLDOWN_MS) return;
+        lastScan = { code, at: now };
+        setScanState(code, "warn"); // pending
+        sendScan(code);
+    }
+
+    function onScanFailure(_err) { /* per-frame decode misses are normal — ignore */ }
+
+    async function startScanner() {
+        if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+            toast("Camera requires HTTPS (or localhost) on iOS/Android.", "err");
+            return;
+        }
+        try {
+            scanner = new Html5Qrcode("reader", { verbose: false });
+            const config = {
+                fps: 12,
+                qrbox: { width: 280, height: 140 },
+                aspectRatio: 1.333,
+                rememberLastUsedCamera: true,
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                ],
+            };
+            const camId = $("camera-select").value;
+            const cameraSpec = camId ? camId : { facingMode: "environment" };
+            await scanner.start(cameraSpec, config, onScanSuccess, onScanFailure);
+            $("btn-start").disabled = true;
+            $("btn-stop").disabled = false;
+            setScanState("Camera ready — point at a barcode.", "");
+        } catch (e) {
+            toast("Camera error: " + e.message, "err");
+            setScanState("Camera failed: " + e.message, "err");
+        }
+    }
+
+    async function stopScanner() {
+        if (!scanner) return;
+        try {
+            await scanner.stop();
+            await scanner.clear();
+        } catch (_) {}
+        scanner = null;
+        $("btn-start").disabled = false;
+        $("btn-stop").disabled = true;
+        setScanState("Stopped.", "");
+    }
+
+    $("btn-start").addEventListener("click", async () => {
+        if (!$("camera-select").options.length) await listCameras();
+        startScanner();
+    });
+    $("btn-stop").addEventListener("click", stopScanner);
+
+    // ---------- init ----------
+    refreshAuthBadge();
+    listCameras();
+
+    window.addEventListener("beforeunload", () => { stopScanner(); });
+})();
+</script>
+</body>
+</html>

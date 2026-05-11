@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSMS — Smart Store Management System</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        .live-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+        @media (max-width: 720px) { .live-row { grid-template-columns: repeat(2, 1fr); } }
+        .live-card {
+            position: relative;
+            background: linear-gradient(165deg, #0c1117 0%, #0e151c 100%);
+            border: 1px solid var(--border); border-radius: 12px;
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 2px;
+            overflow: hidden;
+            transition: box-shadow .35s ease, border-color .35s ease, transform .25s ease;
+        }
+        .live-card::after {
+            content: ""; position: absolute; inset: 0;
+            background: radial-gradient(circle at 100% 0%, rgba(79,195,247,.08), transparent 60%);
+            pointer-events: none;
+        }
+        .live-card .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+        .live-card .val {
+            font-size: 26px; font-weight: 800; color: var(--text);
+            font-variant-numeric: tabular-nums; letter-spacing: -.5px;
+            transition: color .25s ease;
+        }
+        .live-card.pulse {
+            box-shadow: 0 0 0 2px rgba(79,195,247,.55), 0 0 24px rgba(79,195,247,.45), 0 0 60px rgba(79,195,247,.18);
+            border-color: var(--accent); transform: translateY(-1px) scale(1.015);
+        }
+        .live-card.pulse .val { color: var(--accent); text-shadow: 0 0 10px rgba(79,195,247,.6); }
+
+        .delta-pop {
+            position: absolute; right: 10px; top: 8px;
+            font-size: 11px; font-weight: 800; color: #22c55e;
+            background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.45);
+            padding: 2px 7px; border-radius: 999px;
+            opacity: 0; transform: translateY(0); pointer-events: none;
+        }
+        .delta-pop.show { animation: deltaPop 1.4s cubic-bezier(.2,.8,.2,1) forwards; }
+        @keyframes deltaPop {
+            0%   { opacity: 0;  transform: translateY(0) scale(.85); }
+            15%  { opacity: 1;  transform: translateY(-2px) scale(1.05); }
+            70%  { opacity: 1;  transform: translateY(-22px) scale(1); }
+            100% { opacity: 0;  transform: translateY(-30px) scale(.95); }
+        }
+
+        .heartbeat {
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--ok, #22c55e); margin-right: 6px;
+            box-shadow: 0 0 10px rgba(34,197,94,.7);
+            animation: hb 1.6s ease-in-out infinite; vertical-align: middle;
+        }
+        @keyframes hb {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.35); opacity: .55; }
+        }
+
+        .feed { max-height: 240px; overflow: auto; }
+        .feed-item {
+            position: relative;
+            display: grid; grid-template-columns: 60px 1fr auto; gap: 8px;
+            padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 13px;
+        }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-item .ts { color: var(--muted); font-variant-numeric: tabular-nums; }
+        .feed-item .total { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .feed-item.fresh { animation: slideIn .55s cubic-bezier(.2,.8,.2,1); }
+        .feed-item.fresh::before {
+            content: ""; position: absolute; left: -8px; top: 8px;
+            width: 4px; height: calc(100% - 16px);
+            background: var(--accent); border-radius: 2px;
+            box-shadow: 0 0 12px rgba(79,195,247,.7);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); background: rgba(79,195,247,.18); }
+            to   { opacity: 1; transform: translateY(0);    background: transparent; }
+        }
+        @keyframes scanFlash {
+            0%   { box-shadow: 0 0 0 0 rgba(79,195,247,.45); }
+            50%  { box-shadow: 0 0 0 6px rgba(79,195,247,.18); }
+            100% { box-shadow: 0 0 0 0 rgba(79,195,247,0); }
+        }
+        .card.flash { animation: scanFlash .9s ease-out; }
+
+        /* ===== SOC EVENTS PANEL ===== */
+        .soc-card {
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(239,68,68,.04), transparent 40%), var(--panel);
+            position: relative;
+        }
+        .soc-card h2 .soc-badges { float: right; font-size: 11px; font-weight: 600; }
+        .soc-card h2 .soc-badges span {
+            display: inline-block; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+        .soc-card h2 .soc-badges .crit { color: #ef4444; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.45); }
+        .soc-card h2 .soc-badges .warn { color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.45); }
+        .soc-card h2 .soc-badges .info { color: #4fc3f7; background: rgba(79,195,247,.12); border: 1px solid rgba(79,195,247,.45); }
+
+        #soc-events { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+        #soc-events thead th {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--muted); text-align: left; padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        #soc-events tbody tr { border-left: 3px solid transparent; transition: background .2s ease; }
+        #soc-events tbody tr:hover { background: rgba(79,195,247,.04); }
+        #soc-events tbody td {
+            padding: 8px 8px; border-bottom: 1px dashed var(--border);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+        }
+        #soc-events tbody td.cat { text-transform: uppercase; letter-spacing: .5px; font-weight: 700; font-size: 10px; }
+        #soc-events tbody td.sev { text-transform: uppercase; letter-spacing: .5px; font-weight: 800; font-size: 10px; }
+        #soc-events tbody tr.sev-critical { border-left-color: #ef4444; background: rgba(239,68,68,.04); }
+        #soc-events tbody tr.sev-warning  { border-left-color: #f59e0b; background: rgba(245,158,11,.03); }
+        #soc-events tbody tr.sev-info     { border-left-color: #4fc3f7; }
+        #soc-events tbody tr.sev-critical td.sev { color: #ef4444; }
+        #soc-events tbody tr.sev-warning  td.sev { color: #f59e0b; }
+        #soc-events tbody tr.sev-info     td.sev { color: #4fc3f7; }
+        #soc-events tbody tr.sev-critical { animation: socPulse 2.4s ease-in-out infinite; }
+        @keyframes socPulse {
+            0%, 100% { box-shadow: inset 3px 0 0 0 #ef4444, inset 0 0 0 0 rgba(239,68,68,0); }
+            50%      { box-shadow: inset 3px 0 0 0 #ef4444, inset 0 0 30px 0 rgba(239,68,68,.18); }
+        }
+
+        .soc-cat-pill {
+            display: inline-block; padding: 1px 7px; border-radius: 4px;
+            font-size: 10px; font-weight: 700; letter-spacing: .5px;
+            border: 1px solid var(--border);
+        }
+        .soc-cat-security { color: #ef4444; background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.4); }
+        .soc-cat-auth     { color: #fbbf24; background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.4); }
+        .soc-cat-anomaly  { color: #f59e0b; background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.4); }
+        .soc-cat-barcode  { color: #a78bfa; background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.4); }
+        .soc-cat-system   { color: #4fc3f7; background: rgba(79,195,247,.10); border-color: rgba(79,195,247,.4); }
+
+        /* ===== PROMOTIONS — analytics-style cards ===== */
+        .promo-section { margin-top: 18px; }
+        .promo-section:first-child { margin-top: 0; }
+        .promo-section-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .promo-section-title {
+            font-size: 12px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1.2px;
+            color: var(--muted);
+        }
+        .promo-count-pill {
+            background: rgba(79,195,247,.12);
+            color: var(--accent);
+            border: 1px solid rgba(79,195,247,.4);
+            padding: 2px 8px; border-radius: 999px;
+            font-size: 11px; font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .promo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .promo-card {
+            background: linear-gradient(165deg, #0c1117 0%, #0e151c 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color .2s ease, transform .15s ease, box-shadow .25s ease;
+        }
+        .promo-card::after {
+            content: ""; position: absolute; inset: 0;
+            background: radial-gradient(circle at 100% 0%, var(--promo-glow, rgba(79,195,247,.08)), transparent 60%);
+            pointer-events: none;
+        }
+        .promo-card:hover { transform: translateY(-1px); border-color: var(--accent-soft, rgba(79,195,247,.4)); }
+        .promo-card-head {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .promo-product {
+            font-weight: 700; font-size: 14px;
+            color: var(--text);
+            line-height: 1.3;
+        }
+        .promo-discount {
+            font-size: 18px; font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            padding: 4px 10px; border-radius: 8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px var(--promo-shadow, rgba(0,0,0,.2));
+        }
+        .promo-discount.crit { background: rgba(239,68,68,.18); color: #ef4444; border: 1px solid rgba(239,68,68,.5); }
+        .promo-discount.warn { background: rgba(245,158,11,.18); color: #f59e0b; border: 1px solid rgba(245,158,11,.5); }
+        .promo-discount.info { background: rgba(79,195,247,.18); color: var(--accent); border: 1px solid rgba(79,195,247,.5); }
+
+        .promo-meta {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin-top: 4px;
+        }
+        .promo-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px; border-radius: 999px;
+            font-size: 11px; font-weight: 600;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: #0c1117;
+            font-variant-numeric: tabular-nums;
+        }
+        .promo-chip.urgent { color: #ef4444; border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.08); }
+        .promo-chip.soon   { color: #f59e0b; border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.08); }
+        .promo-chip.calm   { color: var(--accent); border-color: rgba(79,195,247,.4); background: rgba(79,195,247,.08); }
+        .promo-chip.stock  { color: #c0c8d2; }
+
+        .promo-bundle .promo-product {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+            font-size: 13px;
+        }
+        .promo-bundle .bundle-plus {
+            color: var(--accent);
+            font-weight: 800;
+            font-size: 14px;
+            opacity: .8;
+        }
+        .promo-bundle-frequency {
+            background: rgba(79,195,247,.12);
+            color: var(--accent);
+            border: 1px solid rgba(79,195,247,.4);
+            padding: 4px 10px; border-radius: 8px;
+            font-weight: 800; font-size: 13px;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .promo-empty {
+            padding: 16px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 13px;
+            font-style: italic;
+            background: #0c1117;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <span class="logo">SSMS</span>
+            <span class="subtitle">Smart Store Management System</span>
+        </div>
+        <div class="status">
+            <span id="security-status" class="badge ok">SECURITY: OK</span>
+            <span id="db-backend" class="badge muted">DB: ...</span>
+            <span id="last-update" class="muted">—</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="grid kpi-grid">
+            <div class="card">
+                <span class="label">Total Revenue</span>
+                <span id="kpi-revenue" class="value">€0.00</span>
+                <span class="hint" id="kpi-sales">0 sales</span>
+            </div>
+            <div class="card warning">
+                <span class="label">Expired Products</span>
+                <span id="kpi-expired" class="value">0</span>
+                <span class="hint" id="kpi-near">0 near-expiry</span>
+            </div>
+            <div class="card warning">
+                <span class="label">Low Stock</span>
+                <span id="kpi-lowstock" class="value">0</span>
+                <span class="hint">items below threshold</span>
+            </div>
+            <div class="card">
+                <span class="label">Web Orders</span>
+                <span id="kpi-orders" class="value">0</span>
+                <span class="hint" id="kpi-web-revenue">€0.00</span>
+            </div>
+            <div class="card critical">
+                <span class="label">Anomalies</span>
+                <span id="kpi-anomalies" class="value">0</span>
+                <span class="hint" id="kpi-open-alerts">0 open alerts</span>
+            </div>
+        </section>
+
+        <section class="card auth">
+            <h2>Authentication</h2>
+            <p class="hint">Default seeded users: <code>admin / admin123</code> &nbsp; · &nbsp; <code>employee / employee123</code></p>
+            <div class="row">
+                <input id="auth-username" placeholder="Username" value="admin" />
+                <input id="auth-password" type="password" placeholder="Password" value="admin123" />
+                <button id="btn-login">Login</button>
+                <span id="auth-status" class="muted">Not logged in</span>
+            </div>
+        </section>
+
+        <section class="card soc-card">
+            <h2>SOC Events <span class="hint" style="margin-left:8px;">cybersecurity feed</span>
+                <span class="soc-badges">
+                    <span class="crit" id="soc-count-critical">0</span>
+                    <span class="warn" id="soc-count-warning">0</span>
+                    <span class="info" id="soc-count-info">0</span>
+                </span>
+            </h2>
+            <table id="soc-events">
+                <thead><tr><th>Time</th><th>Category</th><th>Severity</th><th>Message</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section class="two-col">
+            <div class="card">
+                <h2>Latest Web Orders</h2>
+                <table id="orders-table">
+                    <thead><tr><th>ID</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Stock — Expired & Near-expiry</h2>
+                <table id="stock-table">
+                    <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Days</th><th>Flag</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2><span class="heartbeat"></span>Live Sales Pulse <span class="hint" style="margin-left:8px;">updates every 3s</span></h2>
+            <div class="live-row">
+                <div class="live-card" id="live-card-min">
+                    <span class="lbl">Sales last minute</span>
+                    <span id="rt-last-min" class="val">0</span>
+                    <span class="delta-pop" id="delta-min"></span>
+                </div>
+                <div class="live-card" id="live-card-hour">
+                    <span class="lbl">Sales last hour</span>
+                    <span id="rt-last-hour" class="val">0</span>
+                    <span class="delta-pop" id="delta-hour"></span>
+                </div>
+                <div class="live-card" id="live-card-rev">
+                    <span class="lbl">Revenue last hour</span>
+                    <span id="rt-rev-hour" class="val">€0.00</span>
+                    <span class="delta-pop" id="delta-rev"></span>
+                </div>
+                <div class="live-card" id="live-card-rate">
+                    <span class="lbl">Scans / minute</span>
+                    <span id="rt-rate" class="val">0</span>
+                    <span class="delta-pop" id="delta-rate"></span>
+                </div>
+            </div>
+            <div id="live-feed" class="feed"></div>
+        </section>
+
+        <section class="card">
+            <h2>Recent Inventory Activity <span class="hint" style="margin-left:8px;">live · updates every 5s</span></h2>
+            <table id="activity-table">
+                <thead><tr><th>Time</th><th>Product</th><th>Action</th><th>Qty after</th><th>By</th><th>Barcode</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Promotion Intelligence <span class="hint" style="margin-left:8px;">retail optimization</span></h2>
+
+            <div class="promo-section">
+                <div class="promo-section-header">
+                    <span class="promo-section-title">Near-expiry discounts</span>
+                    <span id="promo-count-discounts" class="promo-count-pill">0</span>
+                </div>
+                <div id="promo-discounts" class="promo-grid"></div>
+            </div>
+
+            <div class="promo-section">
+                <div class="promo-section-header">
+                    <span class="promo-section-title">Bundle recommendations</span>
+                    <span id="promo-count-bundles" class="promo-count-pill">0</span>
+                </div>
+                <div id="promo-bundles" class="promo-grid"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="muted">
+        SSMS v1.0 · auto-refresh every 15s · <a href="/docs" target="_blank">API docs</a>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
