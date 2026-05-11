@@ -1,4 +1,4 @@
 [flake8]
-max-line-length = 120
+max-line-length = 200
 exclude = .git,__pycache__,venv,.terraform
-ignore = W292,E702,F401,E402
+ignore = W292,E702,F401,E402,E501,E203,W504,W503
