@@ -88,7 +88,7 @@ jobs:
 
       - name: Upload Bandit JSON artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bandit-report
           path: bandit.json
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload Semgrep artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: semgrep-report
           path: semgrep.sarif
@@ -168,7 +168,7 @@ jobs:
 
       - name: Upload pip-audit artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pip-audit-report
           path: pip-audit.json
