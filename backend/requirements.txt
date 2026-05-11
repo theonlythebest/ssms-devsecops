@@ -9,7 +9,7 @@ cryptography==43.0.3
 
 # ---- Monitoring / metrics ----
 prometheus-client==0.21.1
-prometheus-fastapi-instrumentator==7.0.0
+prometheus-fastapi-instrumentator==7.1.0
 
 # ---- Auth / security ----
 python-jose[cryptography]==3.3.0
