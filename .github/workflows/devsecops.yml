@@ -1,0 +1,64 @@
+name: SSMS DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  security-and-quality:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Install security tools
+        run: |
+          pip install bandit flake8
+
+      - name: Run flake8 lint
+        run: |
+          cd backend
+          flake8 app
+
+      - name: Run Bandit security scan
+        run: |
+          cd backend
+          bandit -r app
+
+      - name: Build Docker containers
+        run: |
+          docker compose build
+
+      - name: Run Docker containers
+        run: |
+          docker compose up -d
+
+      - name: Wait for backend startup
+        run: sleep 15
+
+      - name: Test FastAPI health endpoint
+        run: |
+          curl http://localhost:8000/health
+
+      - name: Stop containers
+        run: |
+          docker compose down
