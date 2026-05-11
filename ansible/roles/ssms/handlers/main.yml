@@ -1,0 +1,9 @@
+---
+- name: restart ssms stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ ssms_app_dir }}"
+    state: present
+    pull: always
+    remove_orphans: true
+  become: true
+  become_user: "{{ ssms_app_user }}"

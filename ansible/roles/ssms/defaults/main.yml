@@ -1,0 +1,5 @@
+---
+ssms_compose_pull_always:   true
+ssms_compose_remove_orphans: true
+ssms_compose_recreate:      false   # set true to force a full recreate
+ssms_wait_for_health_secs:  180

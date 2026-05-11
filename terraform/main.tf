@@ -84,6 +84,8 @@ resource "aws_instance" "ssms_vm" {
 
   instance_type = "t2.micro"
 
+  key_name = "ssms-key"
+
   vpc_security_group_ids = [
     aws_security_group.ssms_sg.id
   ]

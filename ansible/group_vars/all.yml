@@ -1,0 +1,40 @@
+---
+# ---------------------------------------------------------------------------
+# Project-wide variables consumed by every role.
+# Override at runtime with e.g.:
+#   ansible-playbook playbook.yml -e "ssms_git_branch=feature/xyz"
+# ---------------------------------------------------------------------------
+
+# Git source
+ssms_git_repo:    "https://github.com/theonlythebest/ssms-devsecops.git"
+ssms_git_branch:  "main"
+
+# Where the repo will live on the box
+ssms_app_user:    "ubuntu"
+ssms_app_group:   "ubuntu"
+ssms_app_dir:     "/opt/ssms"
+
+# Compose
+ssms_compose_file: "{{ ssms_app_dir }}/docker-compose.yml"
+ssms_compose_project: "ssms"
+
+# Backend environment overrides (rendered into {{ ssms_app_dir }}/.env)
+ssms_env:
+  DATABASE_URL:        "mysql+pymysql://ssmsuser:strongpassword@mariadb:3306/ssms?charset=utf8mb4"
+  JWT_SECRET:          "change-me-in-production"
+  JWT_ALGORITHM:       "HS256"
+  JWT_EXPIRE_MINUTES:  "60"
+  SEED_ON_STARTUP:     "true"
+
+# Ports we open on the host (UFW)
+ssms_open_ports:
+  - { port: 22,   proto: tcp, comment: "SSH"        }
+  - { port: 80,   proto: tcp, comment: "frontend"   }
+  - { port: 8000, proto: tcp, comment: "backend"    }
+  - { port: 9090, proto: tcp, comment: "prometheus" }
+  - { port: 3000, proto: tcp, comment: "grafana"    }
+
+# Smoke-test endpoints hit at the end of deployment
+ssms_health_url:    "http://127.0.0.1:8000/health"
+ssms_metrics_url:   "http://127.0.0.1:8000/metrics"
+ssms_frontend_url:  "http://127.0.0.1/"

@@ -1,10 +1,18 @@
-fastapi==0.110.0
-uvicorn[standard]==0.27.1
-sqlalchemy==2.0.27
-psycopg2-binary==2.9.9
-pydantic==2.6.1
+# ---- Web framework ----
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# ---- ORM / DB drivers ----
+sqlalchemy==2.0.36
+pymysql==1.1.1
+cryptography==43.0.3
+
+# ---- Monitoring / metrics ----
+prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.0
+
+# ---- Auth / security ----
+python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
-python-jose[cryptography]==3.3.0
-python-multipart==0.0.9
-prometheus-fastapi-instrumentator
+python-multipart==0.0.20

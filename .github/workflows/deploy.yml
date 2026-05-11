@@ -1,0 +1,123 @@
+# ---------------------------------------------------------------------------
+# Deploy SSMS to EC2 via Ansible.
+#
+# Triggers:
+#   - Manual: workflow_dispatch (any branch)
+#   - Auto:   on push to main, BUT only after ci-security and docker-build-scan
+#             have succeeded on the same SHA (workflow_run gate)
+#
+# Required GitHub repository secrets (Settings -> Secrets and variables -> Actions):
+#   EC2_HOST          public IP / DNS of the SSMS EC2 instance
+#   EC2_SSH_USER      ssh username (typically: ubuntu)
+#   EC2_SSH_KEY       private key contents (the .pem itself) - SENSITIVE
+#   SSMS_JWT_SECRET   real JWT secret (overrides the default)
+#   SSMS_DB_PASSWORD  real MariaDB user password
+#   SSMS_DB_ROOT_PASSWORD  real MariaDB root password
+#   GF_ADMIN_PASSWORD real Grafana admin password
+# ---------------------------------------------------------------------------
+
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [ci-security, docker-build-scan]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Git branch to deploy"
+        required: false
+        default: "main"
+      recreate:
+        description: "Force docker compose recreate"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  actions:  read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to EC2 (Ansible)
+    runs-on: ubuntu-latest
+
+    # Gate: only run when triggered manually OR when the upstream workflow
+    # actually succeeded (workflow_run also fires on failure).
+    if: |
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    environment:
+      name: production
+      url: "http://${{ secrets.EC2_HOST }}/"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible + collections
+        run: |
+          python -m pip install --upgrade pip
+          pip install "ansible-core>=2.16" "ansible-lint>=24" passlib
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Ansible-lint
+        run: ansible-lint ansible/ || true
+
+      - name: Write SSH key
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/ssms-key.pem
+          chmod 600 ~/.ssh/ssms-key.pem
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Render inventory from secrets
+        run: |
+          cat > ansible/inventory.ini << EOF
+          [ssms]
+          ssms-prod ansible_host=${{ secrets.EC2_HOST }}
+
+          [ssms:vars]
+          ansible_user                 = ${{ secrets.EC2_SSH_USER }}
+          ansible_ssh_private_key_file = ~/.ssh/ssms-key.pem
+          ansible_python_interpreter   = /usr/bin/python3
+          ansible_ssh_common_args      = -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+          EOF
+
+      - name: Run Ansible playbook
+        working-directory: ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          ANSIBLE_FORCE_COLOR: "1"
+        run: |
+          ansible-playbook -i inventory.ini playbook.yml \
+            -e "ssms_git_branch=${{ github.event.inputs.branch || 'main' }}" \
+            -e "ssms_compose_recreate=${{ github.event.inputs.recreate || false }}" \
+            -e "ssms_env.JWT_SECRET=${{ secrets.SSMS_JWT_SECRET }}" \
+            -e "ssms_env.DATABASE_URL=mysql+pymysql://ssmsuser:${{ secrets.SSMS_DB_PASSWORD }}@mariadb:3306/ssms?charset=utf8mb4"
+
+      - name: Post-deploy smoke test (from runner)
+        run: |
+          set -e
+          for url in \
+            "http://${{ secrets.EC2_HOST }}:8000/health" \
+            "http://${{ secrets.EC2_HOST }}:8000/metrics" \
+            "http://${{ secrets.EC2_HOST }}/"
+          do
+            echo "--> $url"
+            curl -fsS --max-time 10 "$url" >/dev/null && echo "    OK" || (echo "    FAIL"; exit 1)
+          done

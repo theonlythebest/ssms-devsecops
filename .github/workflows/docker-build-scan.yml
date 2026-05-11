@@ -1,0 +1,157 @@
+# ---------------------------------------------------------------------------
+# Docker build + Trivy vulnerability scanning
+#
+# 1. Trivy filesystem scan of the repo
+# 2. Build backend + frontend images via Buildx (no push)
+# 3. Trivy image scans on the built images
+# 4. Generate SBOM (SPDX) for each image
+# 5. Fail the build if any CRITICAL CVE with a known fix is found
+# ---------------------------------------------------------------------------
+
+name: docker-build-scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # -----------------------------------------------------------------------
+  # 1) Trivy filesystem scan (catches secrets + IaC misconfig pre-build)
+  # -----------------------------------------------------------------------
+  trivy-fs:
+    name: Trivy (filesystem + IaC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          scanners: vuln,secret,misconfig
+        env:
+          TRIVY_DISABLE_VEX_NOTICE: "true"
+
+      - name: Upload Trivy fs SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Upload Trivy fs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: trivy-fs.sarif
+
+  # -----------------------------------------------------------------------
+  # 2) Build images (matrix backend + frontend) + Trivy image scan + SBOM
+  # -----------------------------------------------------------------------
+  build-scan-image:
+    name: Build + Trivy (${{ matrix.image.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: backend
+            context: ./backend
+            tag: ssms/backend:ci
+          - name: frontend
+            context: ./frontend
+            tag: ssms/frontend:ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (local, no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.image.context }}
+          tags: ${{ matrix.image.tag }}
+          load: true
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,scope=${{ matrix.image.name }},mode=max
+
+      - name: Trivy image scan (SARIF for code-scanning)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ matrix.image.tag }}
+          format: sarif
+          output: trivy-${{ matrix.image.name }}.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      - name: Trivy image scan (table for the logs)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ matrix.image.tag }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      - name: Trivy image scan (fail on CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ matrix.image.tag }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL
+          ignore-unfixed: true
+
+      - name: Generate SBOM (SPDX-JSON)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ matrix.image.tag }}
+          format: spdx-json
+          output: sbom-${{ matrix.image.name }}.spdx.json
+          scanners: ""    # SBOM mode
+
+      - name: Upload Trivy image SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.image.name }}.sarif
+          category: trivy-${{ matrix.image.name }}
+
+      - name: Upload SBOM + SARIF artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-scan-${{ matrix.image.name }}
+          path: |
+            trivy-${{ matrix.image.name }}.sarif
+            sbom-${{ matrix.image.name }}.spdx.json
+
+  # -----------------------------------------------------------------------
+  # 3) docker-compose config validation -- catches typos in compose YAML
+  # -----------------------------------------------------------------------
+  compose-validate:
+    name: docker compose config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose file
+        run: docker compose -f docker-compose.yml config --quiet

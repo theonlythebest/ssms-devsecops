@@ -8,9 +8,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.core.config import settings
-from app.core.database import ACTIVE_DATABASE_URL, SessionLocal, init_db
+from app.core.database import (
+    ACTIVE_DATABASE_URL,
+    SessionLocal,
+    active_backend_name,
+    init_db,
+)
 from app.routers import (
     analytics, auth, cctv, dashboard, inventory,
     orders, promotions, sales, security, soc, stock,
@@ -18,7 +24,6 @@ from app.routers import (
 from app.utils.logger import logger
 from app.utils.monitoring import MonitoringMiddleware
 from app.utils.seed import seed_all
-from prometheus_fastapi_instrumentator import Instrumentator
 
 
 @asynccontextmanager
@@ -28,10 +33,15 @@ async def lifespan(app: FastAPI):
         db = SessionLocal()
         try:
             seed_all(db)
+        except Exception as exc:  # pragma: no cover - never block boot on a seed bug
+            logger.exception("Seeding failed (non-fatal): %s", exc)
         finally:
             db.close()
-    backend = "PostgreSQL" if ACTIVE_DATABASE_URL.startswith("postgresql") else "SQLite"
-    logger.info("SSMS started -- backend: %s", backend)
+    logger.info(
+        "SSMS started -- backend: %s (%s)",
+        active_backend_name(),
+        ACTIVE_DATABASE_URL.split("@")[-1],
+    )
     yield
     logger.info("SSMS shutdown.")
 
@@ -42,7 +52,9 @@ app = FastAPI(
     description="Smart Store Management System",
     lifespan=lifespan,
 )
-Instrumentator().instrument(app).expose(app)
+
+# Prometheus FastAPI instrumentation -- exposes /metrics
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -68,8 +80,13 @@ app.include_router(security.router)
 
 @app.get("/health", tags=["meta"])
 def health():
-    backend = "postgres" if ACTIVE_DATABASE_URL.startswith("postgresql") else "sqlite"
-    return JSONResponse({"status": "ok", "version": settings.APP_VERSION, "database": backend})
+    return JSONResponse(
+        {
+            "status": "ok",
+            "version": settings.APP_VERSION,
+            "database": active_backend_name(),
+        }
+    )
 
 
 _HERE = os.path.dirname(os.path.abspath(__file__))

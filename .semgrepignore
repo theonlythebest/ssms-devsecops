@@ -1,0 +1,11 @@
+# Paths Semgrep should never scan.
+.git/
+.github/
+.venv/
+venv/
+node_modules/
+__pycache__/
+**/*.pyc
+backend/ssms.db
+terraform/.terraform/
+terraform/terraform.tfstate*

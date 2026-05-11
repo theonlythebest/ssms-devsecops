@@ -1,0 +1,27 @@
+# Gitleaks config -- extends the bundled rules with project-specific allow-list.
+# Run locally with: gitleaks detect --config .gitleaks.toml --source .
+
+title = "SSMS gitleaks rules"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe demo values that aren't real secrets."
+paths = [
+  ".env.example",
+  "docker-compose.yml",
+  "ansible/group_vars/all.yml",
+  "README.md",
+  "SECURITY.md",
+]
+regexTarget = "match"
+regexes = [
+  # Documented placeholder values in the repo
+  '''change-me-in-production''',
+  '''change-me-root''',
+  '''change-me-strong''',
+  '''strongpassword''',
+  '''rootpassword''',
+  '''please-generate-32-bytes-of-randomness''',
+]

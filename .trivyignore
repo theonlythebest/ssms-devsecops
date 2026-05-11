@@ -1,0 +1,4 @@
+# Add CVE IDs here that have been triaged and accepted as not exploitable
+# in this project. Format:  CVE-YYYY-NNNNN  # reason / ticket / expiry
+# Example:
+# CVE-2023-45853  # zlib in mariadb image -- not reachable from app code

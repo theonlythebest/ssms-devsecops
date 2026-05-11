@@ -1,0 +1,108 @@
+---
+# ---------------------------------------------------------------------------
+# Clone the SSMS repo, render env, run `docker compose up -d`, smoke test.
+# Idempotent: git pulls instead of re-cloning, compose only touches changed
+# services, smoke tests fail loud if a container is unhealthy.
+# ---------------------------------------------------------------------------
+
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: "{{ ssms_app_dir }}"
+    state: directory
+    owner: "{{ ssms_app_user }}"
+    group: "{{ ssms_app_group }}"
+    mode: "0755"
+
+- name: Clone / update SSMS repository
+  ansible.builtin.git:
+    repo: "{{ ssms_git_repo }}"
+    dest: "{{ ssms_app_dir }}"
+    version: "{{ ssms_git_branch }}"
+    force: true
+    update: true
+  become: true
+  become_user: "{{ ssms_app_user }}"
+  register: ssms_git
+  notify: restart ssms stack
+
+- name: Render backend .env from variables
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ ssms_app_dir }}/.env"
+    owner: "{{ ssms_app_user }}"
+    group: "{{ ssms_app_group }}"
+    mode: "0640"
+  register: ssms_env_render
+  notify: restart ssms stack
+
+- name: Verify docker-compose.yml exists in repo
+  ansible.builtin.stat:
+    path: "{{ ssms_compose_file }}"
+  register: compose_stat
+
+- name: Fail if docker-compose.yml is missing
+  ansible.builtin.fail:
+    msg: "Expected {{ ssms_compose_file }} but it was not found after clone."
+  when: not compose_stat.stat.exists
+
+- name: Pull latest images
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ ssms_app_dir }}"
+  become: true
+  become_user: "{{ ssms_app_user }}"
+  when: ssms_compose_pull_always
+  register: ssms_pull
+  failed_when: false   # don't break the run if a registry hiccup; compose-up will surface real errors
+
+- name: Bring SSMS stack up (idempotent)
+  community.docker.docker_compose_v2:
+    project_src: "{{ ssms_app_dir }}"
+    state: present
+    pull: "{{ 'always' if ssms_compose_pull_always else 'missing' }}"
+    remove_orphans: "{{ ssms_compose_remove_orphans }}"
+    recreate: "{{ 'always' if ssms_compose_recreate else 'auto' }}"
+    wait: true
+    wait_timeout: "{{ ssms_wait_for_health_secs }}"
+  become: true
+  become_user: "{{ ssms_app_user }}"
+  register: ssms_compose_up
+
+- name: Show compose result summary
+  ansible.builtin.debug:
+    var: ssms_compose_up.containers | default([]) | map(attribute='Name') | list
+  when: ssms_compose_up is defined
+
+- name: Smoke test - backend /health
+  ansible.builtin.uri:
+    url: "{{ ssms_health_url }}"
+    return_content: true
+    status_code: 200
+  register: smoke_health
+  retries: 20
+  delay: 5
+  until: smoke_health.status == 200
+
+- name: Smoke test - backend /metrics
+  ansible.builtin.uri:
+    url: "{{ ssms_metrics_url }}"
+    status_code: 200
+  register: smoke_metrics
+  retries: 10
+  delay: 3
+  until: smoke_metrics.status == 200
+
+- name: Smoke test - frontend root
+  ansible.builtin.uri:
+    url: "{{ ssms_frontend_url }}"
+    status_code: [200, 301, 302]
+  register: smoke_front
+  retries: 10
+  delay: 3
+  until: smoke_front.status in [200, 301, 302]
+
+- name: Report smoke-test summary
+  ansible.builtin.debug:
+    msg:
+      - "/health   -> {{ smoke_health.status }} ({{ smoke_health.json | default(smoke_health.content) }})"
+      - "/metrics  -> {{ smoke_metrics.status }}"
+      - "frontend  -> {{ smoke_front.status }}"

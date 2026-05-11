@@ -1,64 +1,18 @@
-name: SSMS DevSecOps Pipeline
+# ---------------------------------------------------------------------------
+# DEPRECATED: this monolithic pipeline has been split into:
+#   - .github/workflows/ci-security.yml       (lint, Bandit, Semgrep, pip-audit, gitleaks)
+#   - .github/workflows/docker-build-scan.yml (Trivy fs + image, SBOM, compose validate)
+#   - .github/workflows/deploy.yml            (Ansible to EC2)
+# Kept only so older PRs referencing it don't 404; it does nothing on any trigger.
+# ---------------------------------------------------------------------------
+name: devsecops (deprecated)
 
 on:
-  push:
-    branches:
-      - main
-
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-
-  security-and-quality:
-
+  noop:
+    name: Deprecated - see ci-security / docker-build-scan / deploy
     runs-on: ubuntu-latest
-
     steps:
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Python dependencies
-        run: |
-          cd backend
-          pip install -r requirements.txt
-
-      - name: Install security tools
-        run: |
-          pip install bandit flake8
-
-      - name: Run flake8 lint
-        run: |
-          cd backend
-          flake8 app
-
-      - name: Run Bandit security scan
-        run: |
-          cd backend
-          bandit -r app -s B311
-
-      - name: Build Docker containers
-        run: |
-          docker compose build
-
-      - name: Run Docker containers
-        run: |
-          docker compose up -d
-
-      - name: Wait for backend startup
-        run: sleep 15
-
-      - name: Test FastAPI health endpoint
-        run: |
-          curl http://localhost:8000/health
-
-      - name: Stop containers
-        run: |
-          docker compose down
+      - run: echo "This workflow has been replaced. See .github/workflows/{ci-security,docker-build-scan,deploy}.yml"

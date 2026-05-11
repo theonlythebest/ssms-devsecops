@@ -1,0 +1,43 @@
+---
+# ---------------------------------------------------------------------------
+# Common OS prep: base packages, timezone, firewall.
+# Idempotent: re-running is a no-op once converged.
+# ---------------------------------------------------------------------------
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+
+- name: Refresh apt cache (cached for 1h)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ common_base_packages }}"
+    state: present
+
+- name: Ensure UFW default policies (deny incoming, allow outgoing)
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny  }
+    - { direction: outgoing, policy: allow }
+  when: common_enable_ufw
+
+- name: Open required ports in UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment }}"
+  loop: "{{ ssms_open_ports }}"
+  when: common_enable_ufw
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+    logging: "low"
+  when: common_enable_ufw

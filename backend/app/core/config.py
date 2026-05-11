@@ -21,24 +21,47 @@ class Settings:
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://ssms:ssms_secret@localhost:5432/ssms",
+        "mysql+pymysql://ssmsuser:strongpassword@mariadb:3306/ssms?charset=utf8mb4",
     )
+
     SQLITE_FALLBACK_URL: str = os.getenv(
-        "SQLITE_FALLBACK_URL", "sqlite:///./ssms.db"
+        "SQLITE_FALLBACK_URL",
+        "sqlite:///./ssms.db"
     )
 
     # Auth / JWT
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
-    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
+    JWT_SECRET: str = os.getenv(
+        "JWT_SECRET",
+        "change-me-in-production"
+    )
+
+    JWT_ALGORITHM: str = os.getenv(
+        "JWT_ALGORITHM",
+        "HS256"
+    )
+
+    JWT_EXPIRE_MINUTES: int = int(
+        os.getenv("JWT_EXPIRE_MINUTES", "60")
+    )
 
     # Behavior flags
-    SEED_ON_STARTUP: bool = _bool(os.getenv("SEED_ON_STARTUP"), default=True)
+    SEED_ON_STARTUP: bool = _bool(
+        os.getenv("SEED_ON_STARTUP"),
+        default=True
+    )
 
     # Security thresholds (cybersecurity module)
-    WRITE_BURST_THRESHOLD: int = int(os.getenv("WRITE_BURST_THRESHOLD", "30"))
-    AUTH_FAIL_THRESHOLD: int = int(os.getenv("AUTH_FAIL_THRESHOLD", "5"))
-    REQUEST_BURST_THRESHOLD: int = int(os.getenv("REQUEST_BURST_THRESHOLD", "120"))
+    WRITE_BURST_THRESHOLD: int = int(
+        os.getenv("WRITE_BURST_THRESHOLD", "30")
+    )
+
+    AUTH_FAIL_THRESHOLD: int = int(
+        os.getenv("AUTH_FAIL_THRESHOLD", "5")
+    )
+
+    REQUEST_BURST_THRESHOLD: int = int(
+        os.getenv("REQUEST_BURST_THRESHOLD", "120")
+    )
 
 
 settings = Settings()

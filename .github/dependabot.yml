@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# Dependabot: automated security & version updates.
+# ---------------------------------------------------------------------------
+version: 2
+updates:
+
+  # Python deps (backend)
+  - package-ecosystem: pip
+    directory: "/backend"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, python, security]
+    commit-message:
+      prefix: "deps(python)"
+
+  # Backend Dockerfile base image
+  - package-ecosystem: docker
+    directory: "/backend"
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: "deps(docker)"
+
+  # Frontend Dockerfile base image
+  - package-ecosystem: docker
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: "deps(docker)"
+
+  # GitHub Actions versions
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: "deps(ci)"

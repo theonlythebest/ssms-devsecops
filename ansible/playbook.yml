@@ -1,0 +1,55 @@
+---
+# ---------------------------------------------------------------------------
+# Top-level playbook for the SSMS DevSecOps project.
+#
+# Targets a fresh Ubuntu EC2 instance provisioned by Terraform and brings the
+# full stack online:
+#   1. common  - OS hardening + base packages
+#   2. docker  - Docker Engine + Compose plugin
+#   3. ssms    - clone repo, write .env, `docker compose up -d`, smoke tests
+#
+# Run with:
+#   ansible-playbook -i inventory.ini playbook.yml
+#
+# Re-runs are idempotent: existing Docker installs stay put, the repo is
+# fast-forwarded instead of re-cloned, and compose only restarts containers
+# whose images / config actually changed.
+# ---------------------------------------------------------------------------
+
+- name: Deploy SSMS DevSecOps stack
+  hosts: ssms
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Wait for SSH / cloud-init to finish
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+        delay: 5
+
+    - name: Wait for apt / cloud-init lock to release
+      ansible.builtin.shell: |
+        set -e
+        while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 \
+           || fuser /var/lib/apt/lists/lock      >/dev/null 2>&1 \
+           || fuser /var/lib/dpkg/lock           >/dev/null 2>&1; do
+          sleep 3
+        done
+      changed_when: false
+
+  roles:
+    - role: common
+    - role: docker
+    - role: ssms
+
+  post_tasks:
+    - name: Print access URLs
+      ansible.builtin.debug:
+        msg:
+          - "SSMS stack is up on {{ inventory_hostname }} ({{ ansible_host }})"
+          - "  Frontend   : http://{{ ansible_host }}/"
+          - "  Backend    : http://{{ ansible_host }}:8000/"
+          - "  API docs   : http://{{ ansible_host }}:8000/docs"
+          - "  Metrics    : http://{{ ansible_host }}:8000/metrics"
+          - "  Prometheus : http://{{ ansible_host }}:9090/"
+          - "  Grafana    : http://{{ ansible_host }}:3000/  (admin / admin)"

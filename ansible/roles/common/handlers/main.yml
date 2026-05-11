@@ -1,0 +1,5 @@
+---
+- name: reload ufw
+  community.general.ufw:
+    state: reloaded
+  ignore_errors: true
