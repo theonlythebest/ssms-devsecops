@@ -41,8 +41,8 @@ jobs:
 
       - name: Run Bandit security scan
         run: |
-        cd backend
-        bandit -r app -s B311
+          cd backend
+          bandit -r app -s B311
 
       - name: Build Docker containers
         run: |
