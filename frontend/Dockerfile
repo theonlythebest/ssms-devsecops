@@ -6,7 +6,7 @@
 #     and listens on 8080 instead of 80 (no need for CAP_NET_BIND_SERVICE).
 #   - compose maps host :80 -> container :8080 (see docker-compose.yml).
 # ---------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 # Non-root by default in this image (uid 101 / group nginx).
 USER 101
