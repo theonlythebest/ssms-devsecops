@@ -1,168 +1,142 @@
-# SSMS - DevSecOps & CI/CD Security
+# Sécurité
 
-This document describes the security pipeline that gates every change to the
-SSMS project, the tools that participate in it, and how to reproduce the
-checks locally before pushing.
+Ce fichier décrit ce que j'ai mis en place pour protéger le projet. L'idée
+DevSecOps c'est de **ne pas attendre la fin du projet pour penser à la
+sécurité** : tout est testé automatiquement à chaque commit.
 
----
+## 1. Le code
 
-## 1. Pipeline overview
+### Comment je protège le code lui-même
+
+À chaque `git push`, GitHub lance 5 scanners en parallèle :
+
+| Scanner | Cherche quoi |
+|---|---|
+| **Bandit** | failles classiques en Python (mot de passe en dur, MD5, eval...) |
+| **Semgrep** | patterns dangereux selon les règles OWASP Top 10 |
+| **pip-audit** | dépendances Python avec des CVE connues |
+| **Gitleaks** | secrets commités par erreur dans l'historique git |
+| **Trivy** | failles dans les images Docker |
+
+Si un scanner trouve un problème **grave** (HIGH ou CRITICAL), le pipeline
+devient rouge et bloque le déploiement. Les résultats remontent dans
+l'onglet **Security** de GitHub où on peut cliquer pour voir la ligne exacte.
+
+### Lancer les scans en local
+
+Si tu veux tester avant de push :
 
 ```
-                                 push / pull_request
-                                          |
-            +-----------------------------+-----------------------------+
-            |                             |                             |
-            v                             v                             v
-     ci-security.yml             docker-build-scan.yml          (Dependabot PRs
-     (SAST + deps + lint)        (Trivy + SBOM + compose)       refresh weekly)
-            |                             |
-            |        both must succeed (workflow_run gate)
-            +--------------+--------------+
-                           |
-                           v
-                       deploy.yml
-                       (Ansible -> EC2)
-```
-
-Three GitHub Actions workflows live in `.github/workflows/`:
-
-| Workflow                | Triggers                              | Purpose                                                  |
-|-------------------------|---------------------------------------|----------------------------------------------------------|
-| `ci-security.yml`       | push, pull_request, manual            | Lint + Python SAST + dep CVEs + secret scan              |
-| `docker-build-scan.yml` | push, pull_request, manual            | Build images, Trivy fs/image scans, SBOM, compose check  |
-| `deploy.yml`            | manual or auto after both above pass  | Ansible-driven deploy to EC2                             |
-
-Every Python and YAML file is parsed locally before commit; every PR triggers
-all five SAST tools below; every successful run on `main` is eligible for
-deployment to EC2.
-
----
-
-## 2. Tools
-
-### Static analysis (source code)
-
-| Tool       | What it catches                                                                  | Where to look      |
-|------------|----------------------------------------------------------------------------------|--------------------|
-| flake8     | Style + obvious correctness bugs                                                 | Job logs           |
-| Bandit     | Python-specific security smells (e.g. `subprocess shell=True`, weak hashes)      | Security tab + artifact `bandit-report` |
-| Semgrep    | Rules-based SAST: OWASP Top 10, secret patterns, Dockerfile/Python smells        | Security tab + artifact `semgrep-report` |
-| pip-audit  | Known CVEs in pinned Python deps (uses the official Python advisory DB)          | Artifact `pip-audit-report` |
-| Gitleaks   | Committed secrets / API keys / private keys across the whole history             | Action summary     |
-
-### Build & container security
-
-| Tool             | What it catches                                                          |
-|------------------|--------------------------------------------------------------------------|
-| Trivy (fs scan)  | Misconfigurations + secrets in the working tree                          |
-| Trivy (image)    | OS package CVEs in the built backend / frontend Docker images            |
-| Trivy (SBOM)     | SPDX bill of materials for each image, archived as a CI artifact         |
-| docker compose config | Static validation of the compose file before deploy                 |
-
-### Image hardening (applied in `backend/Dockerfile` and `frontend/Dockerfile`)
-
-- Multi-stage build for backend: compilers only in the build stage, not shipped to runtime
-- Non-root user (`uid 10001` backend, `uid 101` frontend / nginx-unprivileged)
-- `HEALTHCHECK` on every image
-- `cap_drop: [ALL]` and `security_opt: no-new-privileges:true` in compose
-- Minimal slim base images (`python:3.12-slim`, `nginxinc/nginx-unprivileged:1.27-alpine`)
-- `tini` as PID 1 in the backend for proper signal forwarding
-
----
-
-## 3. Failure thresholds
-
-| Tool           | Build fails on                                          |
-|----------------|---------------------------------------------------------|
-| flake8         | Any violation (project rule)                            |
-| Bandit         | Any `HIGH` severity finding                             |
-| Semgrep        | Rules in `p/ci`, `p/security-audit`, `p/owasp-top-ten` (advisory; surfaces in Security tab) |
-| pip-audit      | Any vulnerable Python dependency                        |
-| Trivy (image)  | Any `CRITICAL` severity with a known fix                |
-| Trivy (fs)     | `HIGH` and `CRITICAL` misconfig/secret findings         |
-
-Lower-severity findings are still uploaded as SARIF so they show up in the
-"Code scanning" view of the GitHub Security tab, but they don't break CI.
-
----
-
-## 4. Required GitHub Secrets
-
-Add these under **Settings -> Secrets and variables -> Actions -> New repository secret**.
-
-### Required for `deploy.yml`
-
-| Secret                  | Example                                  | Notes                                              |
-|-------------------------|------------------------------------------|----------------------------------------------------|
-| `EC2_HOST`              | `13.39.86.185`                           | Public IP / DNS of the EC2 produced by Terraform   |
-| `EC2_SSH_USER`          | `ubuntu`                                 | SSH login user                                     |
-| `EC2_SSH_KEY`           | `-----BEGIN OPENSSH PRIVATE KEY-----...` | Paste the **entire** content of `ssms-key.pem`     |
-| `SSMS_JWT_SECRET`       | 32 random bytes, hex/base64              | Real JWT secret -- overrides the demo placeholder  |
-| `SSMS_DB_PASSWORD`      | `<strong password>`                      | MariaDB application user password                  |
-| `SSMS_DB_ROOT_PASSWORD` | `<strong password>`                      | MariaDB root password                              |
-| `GF_ADMIN_PASSWORD`     | `<strong password>`                      | Grafana admin password                             |
-
-### Optional
-
-| Secret                | Why you might want it                                     |
-|-----------------------|-----------------------------------------------------------|
-| `SEMGREP_APP_TOKEN`   | Push findings to a Semgrep AppSec Platform org            |
-| `SLACK_WEBHOOK_URL`   | If you wire Slack notifications into the workflows        |
-
-Generate strong values quickly:
-```
-openssl rand -base64 32        # JWT_SECRET
-openssl rand -base64 24        # DB / Grafana passwords
-```
-
----
-
-## 5. Running the scans locally
-
-```bash
-# Python virtual env
-python -m venv .venv && source .venv/bin/activate
-pip install -r backend/requirements.txt
-pip install bandit[sarif] semgrep pip-audit flake8
-
-# Lint + Python SAST
+pip install bandit semgrep pip-audit flake8
 flake8 backend/app
 bandit -r backend/app -s B311
-semgrep --config p/ci --config p/security-audit --config p/python backend/app
+pip-audit -r backend/requirements.txt
+semgrep --config p/ci --config p/owasp-top-ten backend/app
 
-# Dependency CVEs
-pip-audit -r backend/requirements.txt --strict
-
-# Trivy filesystem
-docker run --rm -v "$PWD":/scan aquasec/trivy fs --severity HIGH,CRITICAL --ignore-unfixed /scan
-
-# Trivy image (build first)
-docker build -t ssms/backend:dev ./backend
-docker run --rm aquasec/trivy image --severity CRITICAL,HIGH --ignore-unfixed ssms/backend:dev
-
-# Gitleaks
-docker run --rm -v "$PWD":/scan zricethezav/gitleaks:latest detect --source /scan --config /scan/.gitleaks.toml
-
-# Compose static validation
-docker compose -f docker-compose.yml config --quiet
+docker run --rm -v "$PWD":/scan aquasec/trivy fs --severity HIGH,CRITICAL /scan
+docker run --rm -v "$PWD":/scan zricethezav/gitleaks:latest detect --source /scan
 ```
 
----
+## 2. Les conteneurs Docker
 
-## 6. Hardening checklist still on the roadmap
+Chaque conteneur a plusieurs couches de protection :
 
-- [ ] Move runtime secrets to AWS SSM Parameter Store / Secrets Manager (`get_parameter` at boot)
-- [ ] Pin every base image by digest (`@sha256:...`) instead of tag
-- [ ] Add CodeQL workflow for advanced dataflow SAST
-- [ ] Sign images with cosign + verify in deploy step
-- [ ] Add an OpenAPI fuzzer (e.g. Schemathesis) once the API surface stabilizes
-- [ ] Front the EC2 with Caddy + Let's Encrypt for TLS on 443
+- **Utilisateur non-root** : le backend tourne en uid 10001, nginx en uid
+  101. Même si l'application est piratée, l'attaquant n'a pas root.
+- **cap_drop: ALL** : on retire toutes les capabilities Linux. Pas de
+  possibilité de monter un disque, de faire des raw sockets, etc.
+- **no-new-privileges: true** : impossible de gagner des droits via setuid.
+- **Multi-stage build** : l'image finale ne contient pas de compilateur ni
+  d'outils de dev.
+- **Healthchecks** : Docker vérifie que chaque service répond bien.
 
----
+Tout ça est défini dans `docker-compose.yml` et les `Dockerfile`.
 
-## 7. Reporting a vulnerability
+## 3. Le réseau
 
-If you find a real security issue in this codebase, please email the project
-owner privately rather than opening a public issue. We'll acknowledge within
-72 hours and coordinate a fix before disclosure.
+Il y a **deux pare-feux** qui filtrent les connexions :
+
+- **AWS Security Group** : seuls les ports 22 (SSH), 80 (web), 3000
+  (Grafana), 9090 (Prometheus) sont ouverts depuis Internet.
+- **UFW sur l'OS** : même filtrage, en deuxième ligne au cas où le SG est
+  mal configuré.
+
+À l'intérieur de la VM, les conteneurs sont sur un **réseau Docker isolé**
+(`ssms_net`). Ils se parlent entre eux mais rien d'extérieur ne peut les
+joindre directement.
+
+## 4. Les secrets
+
+Aucun mot de passe n'est dans le code. Tout passe par des variables :
+
+- En **local** : un fichier `.env` à la racine (gitignored, ne sera jamais
+  commité). Le template `.env.example` montre les variables attendues.
+- En **CI/CD** : les secrets de GitHub Actions
+  (Settings -> Secrets and variables -> Actions).
+- Au **runtime** : Docker Compose injecte les variables dans les conteneurs.
+
+Pour générer un secret solide :
+
+```
+openssl rand -base64 32
+```
+
+## 5. Le runtime (l'application en marche)
+
+Le backend a un **middleware de sécurité** (`MonitoringMiddleware`) qui
+analyse chaque requête. Il détecte :
+
+- **Flood de requêtes** (attaque DoS).
+- **Burst d'écritures en base** (signature ransomware).
+- **Échecs de connexion répétés** (brute force).
+- **Attaque multi-vecteur** quand plusieurs signaux montent en même temps.
+
+Si une attaque type ransomware est détectée, le système se met en
+**quarantaine automatique** : toutes les écritures sont refusées (503)
+jusqu'à ce qu'un admin appelle `POST /security/quarantine/release`.
+
+Toutes ces détections sont aussi visibles dans Grafana via des compteurs
+Prometheus (`failed_logins_total`, `quarantine_state`, etc.).
+
+## 6. Détection physique (caméra)
+
+Le script `tools/camera_worker/camera_worker.py` tourne en dehors du stack.
+Il utilise YOLOv8 pour détecter les personnes dans une vidéo. Si quelqu'un
+entre dans une zone interdite définie (la porte de la réserve par exemple),
+il envoie un POST `/cctv/events` au backend. L'alerte apparaît dans le
+dashboard quelques secondes plus tard.
+
+## 7. Si tu veux déployer sur AWS
+
+Tu dois configurer ces secrets dans GitHub (Settings -> Secrets) avant que
+le workflow `deploy.yml` puisse marcher :
+
+| Secret | À quoi ça sert |
+|---|---|
+| `EC2_HOST` | l'IP publique de la VM |
+| `EC2_SSH_USER` | `ubuntu` en général |
+| `EC2_SSH_KEY` | le contenu de la clé `.pem` |
+| `SSMS_JWT_SECRET` | la clé pour signer les tokens JWT |
+| `SSMS_DB_PASSWORD` | mot de passe user MariaDB |
+| `SSMS_DB_ROOT_PASSWORD` | mot de passe root MariaDB |
+| `GF_ADMIN_PASSWORD` | mot de passe admin Grafana |
+
+## 8. Ce qui pourrait être amélioré
+
+Le projet n'est pas parfait, voici les pistes pour aller plus loin (déjà
+identifiées, pas encore implémentées) :
+
+- **HTTPS / TLS** : ajouter Caddy + Let's Encrypt devant pour chiffrer le
+  trafic.
+- **OIDC AWS** : remplacer la clé SSH longue durée par un rôle IAM
+  fédéré -> pas de clé statique dans GitHub.
+- **Sauvegardes auto** : un cron qui sauvegarde MariaDB sur S3 chaque jour.
+- **Loki + Promtail** : centraliser les logs pour pouvoir faire des
+  forensics post-incident.
+- **MFA Grafana** : ajouter oauth2-proxy pour exiger une 2FA.
+- **Haute dispo** : passer en Auto Scaling Group avec un Load Balancer.
+
+## 9. Signaler une faille
+
+Si tu trouves une vraie faille dans le code, envoie-moi un mail plutôt que
+d'ouvrir une issue publique. Je réponds dans les 72h.
