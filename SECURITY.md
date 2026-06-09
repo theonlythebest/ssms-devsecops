@@ -121,22 +121,5 @@ le workflow `deploy.yml` puisse marcher :
 | `SSMS_DB_ROOT_PASSWORD` | mot de passe root MariaDB |
 | `GF_ADMIN_PASSWORD` | mot de passe admin Grafana |
 
-## 8. Ce qui pourrait être amélioré
 
-Le projet n'est pas parfait, voici les pistes pour aller plus loin (déjà
-identifiées, pas encore implémentées) :
 
-- **HTTPS / TLS** : ajouter Caddy + Let's Encrypt devant pour chiffrer le
-  trafic.
-- **OIDC AWS** : remplacer la clé SSH longue durée par un rôle IAM
-  fédéré -> pas de clé statique dans GitHub.
-- **Sauvegardes auto** : un cron qui sauvegarde MariaDB sur S3 chaque jour.
-- **Loki + Promtail** : centraliser les logs pour pouvoir faire des
-  forensics post-incident.
-- **MFA Grafana** : ajouter oauth2-proxy pour exiger une 2FA.
-- **Haute dispo** : passer en Auto Scaling Group avec un Load Balancer.
-
-## 9. Signaler une faille
-
-Si tu trouves une vraie faille dans le code, envoie-moi un mail plutôt que
-d'ouvrir une issue publique. Je réponds dans les 72h.
