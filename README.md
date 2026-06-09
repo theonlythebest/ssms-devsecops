@@ -1,6 +1,6 @@
 # SSMS - Smart Store Management System
 
-Projet de fin d'études (Bac+3 Cybersécurité).
+Projet d'alternance, 2026. (Bac+3 Cybersécurité).
 
 C'est une petite application de gestion de magasin (caisse, stock, commandes
 web, surveillance par caméra), et autour de cette application j'ai mis en
@@ -60,7 +60,7 @@ qu'on sait construire toute l'infrastructure DevSecOps autour.
 ## 3. Comment les outils se parlent
 
 ```
-   Toi (developpeur)
+    developpeur
         |
         | git push
         v
@@ -375,4 +375,4 @@ Pour le détail complet, voir [SECURITY.md](SECURITY.md). En 30 secondes :
 
 ## Auteur
 
-Sarran - projet de fin de cycle, Bac+3 Cybersécurité, 2026.
+Sarran - 2026.
