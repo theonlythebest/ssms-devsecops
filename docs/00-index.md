@@ -1,8 +1,4 @@
-# SSMS DevSecOps - Master Documentation
-
-> **Smart Store Management System** — a hands-on DevSecOps reference project
-> covering the whole lifecycle: code → CI/CD → security scans → infrastructure
-> as code → configuration management → containerized deployment → monitoring.
+# SSMS DevSecOps
 
 This document is split into 16 sections, ordered so a reader who knows nothing
 about DevSecOps can start at section 1 and finish ready to defend the project
