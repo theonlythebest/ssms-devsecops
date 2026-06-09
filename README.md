@@ -100,14 +100,12 @@ qu'on sait construire toute l'infrastructure DevSecOps autour.
 +---------------------+
         ^
         |
-        |  camera_worker.py (sur ton PC)
+        |  camera_worker.py 
         |  envoie les alertes d'intrusion
         |  via POST /cctv/events
 ```
 
-En une phrase : *tu push -> GitHub teste -> Ansible déploie -> les conteneurs
-tournent et se parlent entre eux, ton script caméra envoie ses alertes au
-backend depuis l'extérieur*.
+
 
 ---
 
