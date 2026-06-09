@@ -15,7 +15,6 @@ from app.services import analytics_service
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-
 @router.get("/revenue-timeline", response_model=list[TimelinePoint])
 def revenue_timeline(
     hours: int = Query(24, ge=1, le=720),
@@ -24,7 +23,6 @@ def revenue_timeline(
 ):
     """Revenue & sales-count grouped by hour or day, zero-filled."""
     return analytics_service.revenue_timeline(db, hours=hours, bucket=bucket)
-
 
 @router.get("/top-sellers", response_model=list[TopSeller])
 def top_sellers(
@@ -35,7 +33,6 @@ def top_sellers(
     """Top products by units sold within the rolling window."""
     return analytics_service.top_sellers(db, limit=limit, hours=hours)
 
-
 @router.get("/heatmap", response_model=list[HeatmapPoint])
 def heatmap(
     days: int = Query(7, ge=1, le=90),
@@ -43,7 +40,6 @@ def heatmap(
 ):
     """Sales-by-hour-of-day heatmap, useful to spot peak periods."""
     return analytics_service.sales_heatmap(db, days=days)
-
 
 @router.get("/realtime", response_model=RealtimeFeed)
 def realtime(db: Session = Depends(get_db)):

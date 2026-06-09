@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.models.inventory_log import InventoryLog
 from app.models.stock import StockItem
 
-
 def record_log(
     db: Session,
     *,
@@ -33,7 +32,6 @@ def record_log(
     db.commit()
     db.refresh(entry)
     return entry
-
 
 def list_logs(db: Session, limit: int = 50) -> list[InventoryLog]:
     """Return logs newest-first."""

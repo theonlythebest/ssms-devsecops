@@ -11,7 +11,6 @@ from app.schemas.alert import DashboardSummary
 from app.services import cctv_service, sales_service, stock_service
 from app.utils.logger import security_monitor
 
-
 def build_summary(db: Session) -> DashboardSummary:
     sales_kpi = sales_service.compute_kpi(db)
     stock_kpi = stock_service.compute_kpi(db)
@@ -45,7 +44,6 @@ def build_summary(db: Session) -> DashboardSummary:
         open_alerts=open_alerts,
         security_status=security_status,
     )
-
 
 def list_recent_alerts(db: Session, limit: int = 25):
     return (

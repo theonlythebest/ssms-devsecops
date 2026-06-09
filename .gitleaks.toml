@@ -1,5 +1,3 @@
-# Gitleaks config -- extends the bundled rules with project-specific allow-list.
-# Run locally with: gitleaks detect --config .gitleaks.toml --source .
 
 title = "SSMS gitleaks rules"
 
@@ -17,7 +15,6 @@ paths = [
 ]
 regexTarget = "match"
 regexes = [
-  # Documented placeholder values in the repo
   '''change-me-in-production''',
   '''change-me-root''',
   '''change-me-strong''',

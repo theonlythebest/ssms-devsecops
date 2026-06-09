@@ -14,11 +14,6 @@ from sqlalchemy.orm import Session
 
 from app.models.sale import Sale, SaleItem
 
-
-# ---------------------------------------------------------------------------
-# Revenue timeline (hour or day buckets, with zero-fill so the chart line
-# is continuous even when there are gaps between sales)
-# ---------------------------------------------------------------------------
 def revenue_timeline(
     db: Session, hours: int = 24, bucket: str = "hour"
 ) -> list[dict]:
@@ -50,7 +45,6 @@ def revenue_timeline(
         b["revenue"] += s.total or 0.0
         b["sales_count"] += 1
 
-    # Zero-fill so the chart shows a continuous time axis.
     step = timedelta(days=1) if bucket == "day" else timedelta(hours=1)
     cursor = floor(cutoff)
     end = floor(now)
@@ -67,10 +61,6 @@ def revenue_timeline(
         cursor += step
     return out
 
-
-# ---------------------------------------------------------------------------
-# Top sellers (units + revenue, in a rolling window)
-# ---------------------------------------------------------------------------
 def top_sellers(db: Session, limit: int = 10, hours: int = 24) -> list[dict]:
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     items = (
@@ -89,10 +79,6 @@ def top_sellers(db: Session, limit: int = 10, hours: int = 24) -> list[dict]:
         for name, qty in units.most_common(limit)
     ]
 
-
-# ---------------------------------------------------------------------------
-# Hourly heatmap (0-23) over the last N days
-# ---------------------------------------------------------------------------
 def sales_heatmap(db: Session, days: int = 7) -> list[dict]:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     sales = (
@@ -111,10 +97,6 @@ def sales_heatmap(db: Session, days: int = 7) -> list[dict]:
         for h in range(24)
     ]
 
-
-# ---------------------------------------------------------------------------
-# Realtime feed (counters + last few sales)
-# ---------------------------------------------------------------------------
 def realtime_feed(db: Session) -> dict:
     now = datetime.now(timezone.utc)
     one_min_ago = now - timedelta(minutes=1)
@@ -151,7 +133,6 @@ def realtime_feed(db: Session) -> dict:
             }
         )
 
-    # scans_per_minute uses the 5-minute window for a smoother number than 1m
     scans_per_minute = round(sales_last_5min / 5.0, 2)
 
     return {

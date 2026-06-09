@@ -6,7 +6,6 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 class StockItemCreate(BaseModel):
     name: str
     barcode: Optional[str] = None
@@ -16,13 +15,11 @@ class StockItemCreate(BaseModel):
     unit_price: float = Field(ge=0, default=0.0)
     expiry_date: Optional[date] = None
 
-
 class StockItemUpdate(BaseModel):
     quantity: Optional[int] = Field(default=None, ge=0)
     low_stock_threshold: Optional[int] = Field(default=None, ge=0)
     unit_price: Optional[float] = Field(default=None, ge=0)
     expiry_date: Optional[date] = None
-
 
 class StockItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -39,7 +36,6 @@ class StockItemOut(BaseModel):
     is_expired: bool = False
     is_near_expiry: bool = False
     is_low_stock: bool = False
-
 
 class StockKPI(BaseModel):
     total_items: int

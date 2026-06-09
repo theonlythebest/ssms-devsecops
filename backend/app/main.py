@@ -25,7 +25,6 @@ from app.utils.logger import logger
 from app.utils.monitoring import MonitoringMiddleware
 from app.utils.seed import seed_all
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
@@ -33,7 +32,7 @@ async def lifespan(app: FastAPI):
         db = SessionLocal()
         try:
             seed_all(db)
-        except Exception as exc:  # pragma: no cover - never block boot on a seed bug
+        except Exception as exc:                                                     
             logger.exception("Seeding failed (non-fatal): %s", exc)
         finally:
             db.close()
@@ -45,7 +44,6 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("SSMS shutdown.")
 
-
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -53,7 +51,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Prometheus FastAPI instrumentation -- exposes /metrics
 Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=True)
 
 app.add_middleware(
@@ -77,7 +74,6 @@ app.include_router(analytics.router)
 app.include_router(soc.router)
 app.include_router(security.router)
 
-
 @app.get("/health", tags=["meta"])
 def health():
     return JSONResponse(
@@ -87,7 +83,6 @@ def health():
             "database": active_backend_name(),
         }
     )
-
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _FRONTEND_CANDIDATES = [

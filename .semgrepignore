@@ -1,4 +1,3 @@
-# Paths Semgrep should never scan.
 .git/
 .github/
 .venv/

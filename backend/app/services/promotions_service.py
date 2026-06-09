@@ -9,14 +9,12 @@ from sqlalchemy.orm import Session
 from app.models.sale import Sale, SaleItem
 from app.models.stock import StockItem
 
-
 SEASONAL_EVENTS = {
     "ramadan": ["Milk 1L", "Yogurt", "Cheese", "Pasta", "Olive Oil"],
     "summer": ["Soda 1.5L", "Water 1.5L", "Tomato", "Salmon"],
     "winter": ["Coffee", "Tea", "Cereal"],
     "back_to_school": ["Cereal", "Yogurt", "Apple", "Banana"],
 }
-
 
 def historical_top_sellers(db: Session, days: int = 14) -> list[dict]:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
@@ -33,7 +31,6 @@ def historical_top_sellers(db: Session, days: int = 14) -> list[dict]:
         {"product": name, "units_sold": qty}
         for name, qty in counter.most_common(10)
     ]
-
 
 def near_expiry_discount_suggestions(db: Session, near_days: int = 5) -> list[dict]:
     today = date.today()
@@ -60,7 +57,6 @@ def near_expiry_discount_suggestions(db: Session, near_days: int = 5) -> list[di
             )
     return suggestions
 
-
 def bundle_suggestions(db: Session) -> list[dict]:
     """Find products frequently bought together (basket co-occurrence)."""
     sales = db.query(Sale).filter(Sale.status == "completed").all()
@@ -76,7 +72,6 @@ def bundle_suggestions(db: Session) -> list[dict]:
         for pair, count in top
         if count >= 2
     ]
-
 
 def seasonal_event(event: str) -> dict:
     event = event.lower()

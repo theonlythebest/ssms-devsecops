@@ -13,12 +13,10 @@ from app.models.stock import StockItem
 from app.schemas.order import WebAnalytics, WebOrderCreate
 from app.utils.logger import logger, persist_alert
 
-
 def _new_public_id() -> str:
     return "WO-" + "".join(
         secrets.choice(string.ascii_uppercase + string.digits) for _ in range(10)
     )
-
 
 def create_order(db: Session, payload: WebOrderCreate) -> WebOrder:
     if not payload.items:
@@ -44,7 +42,7 @@ def create_order(db: Session, payload: WebOrderCreate) -> WebOrder:
             fulfillable = 0
             missing.append(line.product_name)
         else:
-            # decrement stock immediately for accepted orders
+                                                             
             stock.quantity -= line.quantity
 
         order.items.append(
@@ -77,7 +75,6 @@ def create_order(db: Session, payload: WebOrderCreate) -> WebOrder:
     )
     return order
 
-
 def list_orders(db: Session, limit: int = 100) -> list[WebOrder]:
     return (
         db.query(WebOrder)
@@ -86,26 +83,22 @@ def list_orders(db: Session, limit: int = 100) -> list[WebOrder]:
         .all()
     )
 
-
 def get_order(db: Session, public_id: str) -> WebOrder:
     o = db.query(WebOrder).filter(WebOrder.public_id == public_id).first()
     if not o:
         raise HTTPException(status_code=404, detail="Order not found")
     return o
 
-
 def analytics(db: Session) -> WebAnalytics:
     orders = db.query(WebOrder).all()
     total_orders = len(orders)
 
-    # peak hour
     hour_counts: dict[int, int] = defaultdict(int)
     for o in orders:
         if o.created_at:
             hour_counts[o.created_at.hour] += 1
     peak_hour = max(hour_counts, key=hour_counts.get) if hour_counts else None
 
-    # most searched / requested products
     product_counter: Counter[str] = Counter()
     for o in orders:
         for it in o.items:
@@ -115,7 +108,6 @@ def analytics(db: Session) -> WebAnalytics:
         for name, qty in product_counter.most_common(5)
     ]
 
-    # missing products = anything where demand > current stock
     missing: list[str] = []
     for name, demand in product_counter.items():
         stock = db.query(StockItem).filter(StockItem.name == name).first()

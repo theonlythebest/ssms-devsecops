@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
-
 class CCTVEvent(Base):
     __tablename__ = "cctv_events"
 

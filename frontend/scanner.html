@@ -147,8 +147,7 @@
 
         @media (max-width: 380px) {
             .row.api-row > input { width: 100%; }
-        }
-    </style>
+        }</style>
 </head>
 <body>
     <header>
@@ -157,7 +156,7 @@
     </header>
 
     <main>
-        <!-- Auth -->
+        
         <section class="card">
             <h2>Authentication</h2>
             <details id="auth-details">
@@ -175,7 +174,6 @@
             </details>
         </section>
 
-        <!-- API base -->
         <section class="card">
             <h2>API endpoint</h2>
             <div class="row api-row">
@@ -187,7 +185,6 @@
             </p>
         </section>
 
-        <!-- Action toggle -->
         <section class="card">
             <h2>Action</h2>
             <div class="seg" role="tablist" aria-label="Scan action">
@@ -196,7 +193,6 @@
             </div>
         </section>
 
-        <!-- Scanner -->
         <section class="card">
             <h2>Camera</h2>
             <div id="reader"></div>
@@ -211,7 +207,6 @@
             </div>
         </section>
 
-        <!-- Log -->
         <section class="card">
             <h2>History</h2>
             <div id="log" class="log"></div>
@@ -224,7 +219,6 @@
 (() => {
     "use strict";
 
-    // ---------- config / persistence ----------
     const LS_TOKEN = "ssms.token";
     const LS_API   = "ssms.api_base";
     const COOLDOWN_MS = 1800;
@@ -238,7 +232,6 @@
 
     const $ = (id) => document.getElementById(id);
 
-    // ---------- auth UI ----------
     function refreshAuthBadge() {
         const el = $("auth-status");
         if (token) {
@@ -293,7 +286,6 @@
         toast("Token cleared.", "ok");
     });
 
-    // ---------- API base ----------
     $("api-base").value = apiBase;
     $("btn-save-api").addEventListener("click", () => {
         apiBase = $("api-base").value.trim().replace(/\/+$/, "");
@@ -302,7 +294,6 @@
     });
     function apiUrl(path) { return (apiBase || "") + path; }
 
-    // ---------- action toggle ----------
     document.querySelectorAll(".seg button").forEach((b) => {
         b.addEventListener("click", () => {
             document.querySelectorAll(".seg button").forEach((x) => x.classList.remove("active"));
@@ -311,7 +302,6 @@
         });
     });
 
-    // ---------- toast ----------
     let toastTimer = null;
     function toast(message, kind = "ok") {
         const t = $("toast");
@@ -321,14 +311,12 @@
         toastTimer = setTimeout(() => { t.className = "toast " + kind; }, 2200);
     }
 
-    // ---------- scan-state UI ----------
     function setScanState(text, kind = "") {
         const s = $("scan-state");
         s.className = "scan-state" + (kind ? " flash-" + kind : "");
         s.innerHTML = `<span class="label">Last scan</span><span class="barcode">${text}</span>`;
     }
 
-    // ---------- log ----------
     function logEntry({ ok, barcode, product, qty, msg }) {
         const el = document.createElement("div");
         el.className = "log-entry" + (ok ? "" : " err");
@@ -345,7 +333,6 @@
         while (log.children.length > 25) log.removeChild(log.lastChild);
     }
 
-    // ---------- feedback (sound + vibration) ----------
     let audioCtx = null;
     function beep(freq = 880, durMs = 90) {
         try {
@@ -361,7 +348,6 @@
     }
     function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
 
-    // ---------- POST /stock/scan-barcode ----------
     async function sendScan(barcode) {
         if (!token) {
             setScanState(barcode + " · not authenticated", "err");
@@ -404,7 +390,6 @@
         }
     }
 
-    // ---------- camera / scanner ----------
     async function listCameras() {
         try {
             const cams = await Html5Qrcode.getCameras();
@@ -415,7 +400,7 @@
                 o.value = c.id; o.textContent = c.label || c.id;
                 sel.appendChild(o);
             });
-            // Prefer rear camera
+            
             const rear = cams.find((c) => /back|rear|environment/i.test(c.label));
             if (rear) sel.value = rear.id;
             return cams;
@@ -429,14 +414,14 @@
         const code = (decodedText || "").trim();
         if (!code) return;
         const now = Date.now();
-        // Debounce: same barcode within cooldown window is ignored
+        
         if (code === lastScan.code && (now - lastScan.at) < COOLDOWN_MS) return;
         lastScan = { code, at: now };
-        setScanState(code, "warn"); // pending
+        setScanState(code, "warn"); 
         sendScan(code);
     }
 
-    function onScanFailure(_err) { /* per-frame decode misses are normal — ignore */ }
+    function onScanFailure(_err) {  }
 
     async function startScanner() {
         if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
@@ -490,12 +475,10 @@
     });
     $("btn-stop").addEventListener("click", stopScanner);
 
-    // ---------- init ----------
     refreshAuthBadge();
     listCameras();
 
     window.addEventListener("beforeunload", () => { stopScanner(); });
-})();
-</script>
+})();</script>
 </body>
 </html>

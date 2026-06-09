@@ -18,7 +18,6 @@ NIGHT_WINDOW = (0, 5)
 REFUND_BURST_WINDOW = timedelta(hours=1)
 REFUND_BURST_LIMIT = 4
 
-
 def _detect_anomalies(db: Session, sale: Sale) -> None:
     now = sale.created_at or datetime.now(timezone.utc)
 
@@ -49,7 +48,6 @@ def _detect_anomalies(db: Session, sale: Sale) -> None:
             persist_alert(db, "anomaly", "warning",
                           f"Repeated cancellations: {recent} in last hour")
 
-
 def create_sale(db: Session, payload: SaleCreate) -> Sale:
     if not payload.items:
         raise HTTPException(status_code=400, detail="Sale must contain at least one item")
@@ -69,7 +67,6 @@ def create_sale(db: Session, payload: SaleCreate) -> Sale:
     logger.info("Sale recorded: #%s total=%.2f status=%s", sale.id, sale.total, sale.status)
     return sale
 
-
 def record_scan_sale(db: Session, product: StockItem, *,
                      quantity: int = 1, username: str | None = None) -> Sale:
     payload = SaleCreate(
@@ -82,17 +79,14 @@ def record_scan_sale(db: Session, product: StockItem, *,
                 sale.id, product.name, quantity, sale.total, sale.cashier)
     return sale
 
-
 def list_sales(db: Session, limit: int = 100) -> list[Sale]:
     return db.query(Sale).order_by(Sale.created_at.desc()).limit(limit).all()
-
 
 def get_sale(db: Session, sale_id: int) -> Sale:
     sale = db.query(Sale).filter(Sale.id == sale_id).first()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
     return sale
-
 
 def compute_kpi(db: Session) -> SaleKPI:
     sales = db.query(Sale).all()

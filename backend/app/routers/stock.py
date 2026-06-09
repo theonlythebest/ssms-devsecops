@@ -11,11 +11,9 @@ from app.services import stock_service
 
 router = APIRouter(prefix="/stock", tags=["stock"])
 
-
 @router.get("/", response_model=list[StockItemOut])
 def list_items(db: Session = Depends(get_db)):
     return stock_service.list_items(db)
-
 
 @router.post("/", response_model=StockItemOut, status_code=201)
 def create_item(
@@ -24,7 +22,6 @@ def create_item(
     _admin=Depends(require_role("admin")),
 ):
     return stock_service.create_item(db, payload)
-
 
 @router.patch("/{item_id}", response_model=StockItemOut)
 def update_item(
@@ -35,32 +32,26 @@ def update_item(
 ):
     return stock_service.update_item(db, item_id, payload)
 
-
 @router.get("/expired", response_model=list[StockItemOut])
 def expired(db: Session = Depends(get_db)):
     return stock_service.list_expired(db)
-
 
 @router.get("/near-expiry", response_model=list[StockItemOut])
 def near_expiry(db: Session = Depends(get_db)):
     return stock_service.list_near_expiry(db)
 
-
 @router.get("/low-stock", response_model=list[StockItemOut])
 def low_stock(db: Session = Depends(get_db)):
     return stock_service.list_low_stock(db)
-
 
 @router.post("/scan", status_code=200)
 def scan(db: Session = Depends(get_db), _user=Depends(get_current_user)):
     raised = stock_service.scan_and_alert(db)
     return {"alerts_raised": raised}
 
-
 @router.get("/kpi", response_model=StockKPI)
 def kpi(db: Session = Depends(get_db)):
     return stock_service.compute_kpi(db)
-
 
 @router.post("/scan-product")
 def scan_product(
@@ -71,7 +62,6 @@ def scan_product(
 ):
     """Simulate a real POS / barcode scan: sell or restock by 1 unit."""
     return stock_service.scan_product(db, product_id, action, username=user.username)
-
 
 @router.post("/scan-barcode")
 def scan_barcode(

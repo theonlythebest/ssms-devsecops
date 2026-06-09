@@ -11,7 +11,6 @@ from app.services import cctv_service
 
 router = APIRouter(prefix="/cctv", tags=["cctv"])
 
-
 @router.post("/events", response_model=CCTVEventOut, status_code=201)
 def record(
     payload: CCTVEventCreate,
@@ -19,7 +18,6 @@ def record(
     _user=Depends(get_current_user),
 ):
     return cctv_service.record_event(db, payload)
-
 
 @router.get("/events", response_model=list[CCTVEventOut])
 def list_events(
@@ -29,16 +27,13 @@ def list_events(
 ):
     return cctv_service.list_events(db, zone=zone, limit=limit)
 
-
 @router.get("/zones", response_model=list[ZoneStat])
 def zones(db: Session = Depends(get_db)):
     return cctv_service.per_zone_stats(db)
 
-
 @router.get("/layout", response_model=LayoutSuggestion)
 def layout(db: Session = Depends(get_db)):
     return cctv_service.layout_suggestion(db)
-
 
 @router.get("/anomalies")
 def anomalies(db: Session = Depends(get_db)):

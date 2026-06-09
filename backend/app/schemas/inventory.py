@@ -6,7 +6,6 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-
 class InventoryLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

@@ -1,8 +1,4 @@
 ---
-# ---------------------------------------------------------------------------
-# Common OS prep: base packages, timezone, firewall.
-# Idempotent: re-running is a no-op once converged.
-# ---------------------------------------------------------------------------
 
 - name: Set timezone
   community.general.timezone:

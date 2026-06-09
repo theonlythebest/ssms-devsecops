@@ -1,5 +1,5 @@
-// SSMS Market — customer-facing Click & Collect.
-// Strict separation of concerns: api / cart / state / render / events.
+
+
 (() => {
     "use strict";
 
@@ -14,7 +14,6 @@
         return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
     };
 
-    // ===================== API LAYER =====================
     const api = {
         async getStock() {
             const res = await fetch(API_BASE + "/stock/");
@@ -33,7 +32,6 @@
         },
     };
 
-    // ===================== CART (localStorage) =====================
     const CART_KEY = "ssms.shop.cart.v1";
     const cart = {
         items: {},
@@ -70,14 +68,12 @@
         total() { return this.subtotal() + this.tax(); },
     };
 
-    // ===================== STATE =====================
     const state = {
         allProducts: [],
         selectedCategory: null,
         searchQuery: "",
     };
 
-    // ===================== I18N HELPERS =====================
     const CATEGORY_LABELS = {
         bakery: "Boulangerie",
         dairy: "Produits laitiers",
@@ -114,7 +110,6 @@
     const labelOf = (cat) => CATEGORY_LABELS[cat] || cat;
     const iconOf = (p) => PRODUCT_ICONS[p.name] || CATEGORY_ICONS[p.category] || "📦";
 
-    // ===================== RENDER =====================
     const render = {
         categories(products) {
             const counts = {};
@@ -272,7 +267,6 @@
         },
     };
 
-    // ===================== UI HELPERS =====================
     function openCart()  { $("cart-drawer").classList.add("open"); $("cart-drawer").setAttribute("aria-hidden", "false"); }
     function closeCart() { $("cart-drawer").classList.remove("open"); $("cart-drawer").setAttribute("aria-hidden", "true"); }
 
@@ -285,7 +279,6 @@
         toastTimer = setTimeout(() => { t.hidden = true; }, ms);
     }
 
-    // ===================== CONTROLLERS =====================
     async function loadProducts() {
         try {
             const products = await api.getStock();
@@ -333,7 +326,6 @@
         }
     }
 
-    // ===================== EVENT WIRING =====================
     function wire() {
         $("search").addEventListener("input", debounce((e) => {
             state.searchQuery = e.target.value;
@@ -356,7 +348,6 @@
         });
     }
 
-    // ===================== INIT =====================
     document.addEventListener("DOMContentLoaded", () => {
         cart.load();
         wire();

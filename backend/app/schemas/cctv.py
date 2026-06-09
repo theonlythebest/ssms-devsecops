@@ -6,13 +6,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 class CCTVEventCreate(BaseModel):
     zone: str
     people_count: int = Field(ge=0, default=0)
     activity_score: int = Field(ge=0, default=0)
     note: Optional[str] = None
-
 
 class CCTVEventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -23,14 +21,12 @@ class CCTVEventOut(BaseModel):
     note: Optional[str] = None
     timestamp: datetime
 
-
 class ZoneStat(BaseModel):
     zone: str
     avg_people: float
     max_people: int
     avg_activity: float
     sample_count: int
-
 
 class LayoutSuggestion(BaseModel):
     high_traffic_zones: list[str]

@@ -41,10 +41,7 @@ PRODUCTS = [
 
 ZONES = ["entrance", "produce", "dairy", "checkout", "beverages", "snacks", "butcher"]
 
-# GS1 prefix "200"-"299" is reserved for in-store / restricted-circulation
-# barcodes — the correct range to use for an internal POS catalog.
 EAN13_INTERNAL_PREFIX = "200"
-
 
 def _ean13_check_digit(twelve_digits: str) -> str:
     """Compute the Mod-10 check digit for a 12-digit EAN-13 base."""
@@ -55,19 +52,16 @@ def _ean13_check_digit(twelve_digits: str) -> str:
     )
     return str((10 - total % 10) % 10)
 
-
 def _generate_ean13(index: int) -> str:
     """Deterministic, valid EAN-13 barcode for a given product index.
 
     Format: <3-digit internal prefix><9-digit zero-padded index><check digit>
     """
-    base = f"{EAN13_INTERNAL_PREFIX}{index:09d}"  # 12 digits
+    base = f"{EAN13_INTERNAL_PREFIX}{index:09d}"             
     return base + _ean13_check_digit(base)
-
 
 def _random_id(n: int = 10) -> str:
     return "WO-" + "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(n))
-
 
 def _seed_users(db: Session) -> None:
     if db.query(User).count() > 0:
@@ -90,7 +84,6 @@ def _seed_users(db: Session) -> None:
     )
     db.commit()
     logger.info("Seeded default users (admin / employee).")
-
 
 def _seed_stock(db: Session) -> None:
     today = date.today()
@@ -136,7 +129,6 @@ def _seed_stock(db: Session) -> None:
             backfilled,
         )
 
-
 def _seed_sales(db: Session) -> None:
     if db.query(Sale).count() > 0:
         return
@@ -171,7 +163,6 @@ def _seed_sales(db: Session) -> None:
     db.commit()
     logger.info("Seeded sales records.")
 
-
 def _seed_cctv(db: Session) -> None:
     if db.query(CCTVEvent).count() > 0:
         return
@@ -192,7 +183,6 @@ def _seed_cctv(db: Session) -> None:
         )
     db.commit()
     logger.info("Seeded CCTV events.")
-
 
 def _seed_orders(db: Session) -> None:
     if db.query(WebOrder).count() > 0:
@@ -220,7 +210,6 @@ def _seed_orders(db: Session) -> None:
         db.add(order)
     db.commit()
     logger.info("Seeded web orders.")
-
 
 def seed_all(db: Session) -> None:
     """Run all seeders. Idempotent."""

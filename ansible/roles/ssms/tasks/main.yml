@@ -1,9 +1,4 @@
 ---
-# ---------------------------------------------------------------------------
-# Clone the SSMS repo, render env, run `docker compose up -d`, smoke test.
-# Idempotent: git pulls instead of re-cloning, compose only touches changed
-# services, smoke tests fail loud if a container is unhealthy.
-# ---------------------------------------------------------------------------
 
 - name: Ensure app directory exists
   ansible.builtin.file:
@@ -52,7 +47,7 @@
   become_user: "{{ ssms_app_user }}"
   when: ssms_compose_pull_always
   register: ssms_pull
-  failed_when: false   # don't break the run if a registry hiccup; compose-up will surface real errors
+  failed_when: false
 
 - name: Bring SSMS stack up (idempotent)
   community.docker.docker_compose_v2:

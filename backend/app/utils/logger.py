@@ -11,7 +11,6 @@ from typing import Deque, Dict
 
 from app.core.config import settings
 
-
 def _build_logger() -> logging.Logger:
     log = logging.getLogger("ssms")
     if log.handlers:
@@ -25,9 +24,7 @@ def _build_logger() -> logging.Logger:
     log.propagate = False
     return log
 
-
 logger = _build_logger()
-
 
 class SecurityMonitor:
     """In-memory anomaly detector with cooldowns + multi-vector correlation."""
@@ -87,7 +84,6 @@ class SecurityMonitor:
             write_rate = len(self._events.get("db_write", []))
             auth_fail_rate = len(self._auth_failures)
 
-        # API flood / request spike
         if request_rate > settings.REQUEST_BURST_THRESHOLD:
             triggered_vectors.add("api_flood")
             if self.can_alert("api_flood", cooldown=60):
@@ -97,7 +93,6 @@ class SecurityMonitor:
                     "message": f"Potential API flooding detected: {request_rate}/min",
                 })
 
-        # Database write anomaly + ransomware-like behavior + auto-containment
         if write_rate > settings.WRITE_BURST_THRESHOLD:
             triggered_vectors.add("ransomware")
             if self.can_alert("db_write_burst", cooldown=60):
@@ -120,7 +115,6 @@ class SecurityMonitor:
                     "message": "Automatic containment activated due to ransomware indicators",
                 })
 
-        # Auth flood
         if auth_fail_rate > settings.AUTH_FAIL_THRESHOLD:
             triggered_vectors.add("auth_flood")
             if self.can_alert("auth_flood", cooldown=60):
@@ -130,7 +124,6 @@ class SecurityMonitor:
                     "message": f"Multiple authentication failures: {auth_fail_rate}/min",
                 })
 
-        # Multi-vector attack correlation
         if len(triggered_vectors) >= 2 and self.can_alert("multi_vector", cooldown=120):
             anomalies.append({
                 "category": "security",
@@ -176,9 +169,7 @@ class SecurityMonitor:
                 "checked_at": datetime.now(timezone.utc).isoformat(),
             }
 
-
 security_monitor = SecurityMonitor()
-
 
 def persist_alert(db, category: str, severity: str, message: str) -> None:
     from app.models.alert import Alert

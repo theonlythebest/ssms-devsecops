@@ -1,4 +1,4 @@
-// SSMS dashboard frontend.
+
 (() => {
     const API = "";
     const REFRESH_MS = 15000;
@@ -148,6 +148,8 @@
 
     let lastRtSnapshot = null;
     let lastFeedIds = new Set();
+    let lastCCTVIds = new Set();
+    let cctvFirstRun = true;
 
     function pulse(id) {
         const el = $(id); if (!el) return;
@@ -226,7 +228,61 @@
         catch (e) { console.error("analytics refresh failed", e); }
     }
 
-    // ===== Promotions: analytics-style cards =====
+    function renderCCTV(events) {
+        const feed = $("cctv-feed");
+        const intrusions = (events || []).filter((e) => {
+            const note = (e.note || "").toUpperCase();
+            return note.includes("INTRUSION") || (e.activity_score || 0) >= 80;
+        });
+
+        const now = Date.now();
+        const liveCount = intrusions.filter((e) =>
+            (now - new Date(e.timestamp).getTime()) < 60000
+        ).length;
+        $("cctv-count-live").textContent = liveCount;
+        $("cctv-count-total").textContent = intrusions.length;
+
+        if (!intrusions.length) {
+            feed.innerHTML = '<div class="cctv-empty">Perimeter clear — no intrusion detected.</div>';
+            lastCCTVIds = new Set();
+            cctvFirstRun = false;
+            return;
+        }
+
+        intrusions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        feed.innerHTML = "";
+        const seen = new Set();
+        intrusions.slice(0, 20).forEach((e) => {
+            seen.add(e.id);
+            
+            const isFresh = !cctvFirstRun && !lastCCTVIds.has(e.id);
+            const ts = new Date(e.timestamp).toLocaleTimeString();
+            
+            const cleanNote = (e.note || "Intrusion detected")
+                .replace(/^INTRUSION:\s*/i, "")
+                .trim();
+            const div = document.createElement("article");
+            div.className = "cctv-item" + (isFresh ? " fresh" : "");
+            div.innerHTML =
+                '<div class="ts">' + ts + '</div>' +
+                '<div>' +
+                    '<span class="zone-pill">' + escapeHTML(e.zone) + '</span>' +
+                    '<span class="note">' + escapeHTML(cleanNote) + '</span>' +
+                '</div>' +
+                '<div class="people">👤 ' + (e.people_count ?? 0) + '</div>' +
+                '<div class="score">' + (e.activity_score ?? 0) + '</div>';
+            feed.appendChild(div);
+        });
+        lastCCTVIds = seen;
+        cctvFirstRun = false;
+    }
+
+    async function refreshCCTV() {
+        try { renderCCTV(await get("/cctv/events?limit=30")); }
+        catch (e) { console.error("cctv refresh failed", e); }
+    }
+
     function discountSeverity(pct) {
         if (pct >= 50) return "crit";
         if (pct >= 30) return "warn";
@@ -244,7 +300,6 @@
     }
 
     function renderPromotions(d) {
-        // ----- Near-expiry discounts -----
         const discounts = d.discounts || [];
         $("promo-count-discounts").textContent = discounts.length;
         const dGrid = $("promo-discounts");
@@ -273,7 +328,6 @@
             });
         }
 
-        // ----- Bundle recommendations -----
         const bundles = d.bundles || [];
         $("promo-count-bundles").textContent = bundles.length;
         const bGrid = $("promo-bundles");
@@ -329,7 +383,9 @@
 
     refreshAll();
     refreshAnalytics();
+    refreshCCTV();
     setInterval(refreshAll, REFRESH_MS);
     setInterval(refreshActivity, 5000);
     setInterval(refreshAnalytics, 3000);
+    setInterval(refreshCCTV, 5000);
 })();

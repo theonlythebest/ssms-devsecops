@@ -1,10 +1,3 @@
-# ---------------------------------------------------------------------------
-# DEPRECATED: this monolithic pipeline has been split into:
-#   - .github/workflows/ci-security.yml       (lint, Bandit, Semgrep, pip-audit, gitleaks)
-#   - .github/workflows/docker-build-scan.yml (Trivy fs + image, SBOM, compose validate)
-#   - .github/workflows/deploy.yml            (Ansible to EC2)
-# Kept only so older PRs referencing it don't 404; it does nothing on any trigger.
-# ---------------------------------------------------------------------------
 name: devsecops (deprecated)
 
 on:

@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
-
 class StockItem(Base):
     __tablename__ = "stock_items"
 

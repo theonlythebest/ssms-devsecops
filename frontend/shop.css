@@ -1,4 +1,4 @@
-/* ===== SSMS Market — tropical grocery theme ===== */
+
 :root {
     --green-900: #0f3a26;
     --green-800: #155e3a;
@@ -30,7 +30,6 @@ html, body {
 
 a { color: inherit; text-decoration: none; }
 
-/* ===== Nav ===== */
 .nav {
     position: sticky; top: 0; z-index: 30;
     background: var(--green-900);
@@ -97,13 +96,11 @@ a { color: inherit; text-decoration: none; }
 }
 .cart-badge.hidden { display: none; }
 
-/* ===== Layout ===== */
 main {
     max-width: 1200px; margin: 0 auto;
     padding: 24px 20px 64px;
 }
 
-/* ===== Hero ===== */
 .hero {
     background: linear-gradient(135deg, var(--green-800) 0%, var(--green-700) 100%);
     border-radius: 20px;
@@ -148,7 +145,6 @@ main {
     opacity: .85;
 }
 
-/* ===== Buttons ===== */
 .btn-primary {
     background: #fff;
     color: var(--green-900);
@@ -165,7 +161,6 @@ main {
 .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-block { width: 100%; justify-content: center; padding: 14px; }
 
-/* ===== Categories ===== */
 .categories { margin-bottom: 40px; }
 .categories h2 {
     font-size: 22px; font-weight: 800;
@@ -211,7 +206,6 @@ main {
 }
 .category-count { color: var(--muted); font-size: 12px; }
 
-/* ===== Products ===== */
 .products-header {
     display: flex; justify-content: space-between; align-items: baseline;
     margin-bottom: 20px;
@@ -297,7 +291,6 @@ main {
 
 .empty { grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--muted); }
 
-/* ===== Footer ===== */
 .site-footer {
     max-width: 1200px; margin: 0 auto;
     padding: 24px 20px;
@@ -306,7 +299,6 @@ main {
 }
 .footer-link { color: var(--green-800); font-weight: 600; }
 
-/* ===== Cart drawer ===== */
 .cart-drawer {
     position: fixed; inset: 0;
     pointer-events: none;
@@ -426,7 +418,6 @@ main {
     line-height: 1.4;
 }
 
-/* ===== Modal ===== */
 .modal {
     position: fixed; inset: 0;
     z-index: 60;
@@ -480,7 +471,6 @@ main {
     margin: 14px 0;
 }
 
-/* ===== Toast ===== */
 .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%);
@@ -500,7 +490,6 @@ main {
 }
 .toast[hidden] { display: none; }
 
-/* ===== Responsive ===== */
 @media (max-width: 720px) {
     .nav-inner { grid-template-columns: auto 1fr auto; gap: 10px; padding: 10px 14px; }
     .brand-name { display: none; }

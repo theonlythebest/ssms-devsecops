@@ -5,24 +5,20 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-
 class TimelinePoint(BaseModel):
     bucket: str
     revenue: float
     sales_count: int
-
 
 class TopSeller(BaseModel):
     product: str
     units: int
     revenue: float
 
-
 class HeatmapPoint(BaseModel):
     hour: int
     sales: int
     revenue: float
-
 
 class LatestSale(BaseModel):
     id: int
@@ -31,7 +27,6 @@ class LatestSale(BaseModel):
     total: float
     cashier: str
     timestamp: Optional[str] = None
-
 
 class RealtimeFeed(BaseModel):
     now: str

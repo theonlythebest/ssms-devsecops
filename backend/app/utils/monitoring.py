@@ -3,10 +3,6 @@ from __future__ import annotations
 
 from prometheus_client import Counter, Gauge
 
-# =========================
-# AUTH / SECURITY METRICS
-# =========================
-
 successful_logins_total = Counter(
     "successful_logins_total",
     "Total successful logins"
@@ -48,10 +44,6 @@ critical_soc_alerts_total = Counter(
     "Critical SOC alerts"
 )
 
-# =========================
-# QUARANTINE METRICS
-# =========================
-
 quarantine_trigger_total = Counter(
     "quarantine_trigger_total",
     "Total quarantine activations"
@@ -72,10 +64,6 @@ quarantine_state = Gauge(
     "Current quarantine state (0=off,1=on)"
 )
 
-# =========================
-# BARCODE / RETAIL SECURITY
-# =========================
-
 unknown_barcode_total = Counter(
     "unknown_barcode_total",
     "Unknown barcode scans"
@@ -95,10 +83,6 @@ barcode_restock_operations_total = Counter(
     "barcode_restock_operations_total",
     "Restock operations through barcode scans"
 )
-
-# =========================
-# SALES / BUSINESS METRICS
-# =========================
 
 sales_total = Counter(
     "sales_total",
@@ -135,10 +119,6 @@ top_seller_events_total = Counter(
     "Top seller updates"
 )
 
-# =========================
-# INVENTORY METRICS
-# =========================
-
 inventory_updates_total = Counter(
     "inventory_updates_total",
     "Inventory updates"
@@ -164,10 +144,6 @@ inventory_activity_total = Counter(
     "Inventory activity logs"
 )
 
-# =========================
-# SYSTEM / API METRICS
-# =========================
-
 api_errors_total = Counter(
     "api_errors_total",
     "Total API errors"
@@ -192,10 +168,6 @@ metrics_requests_total = Counter(
     "metrics_requests_total",
     "Metrics endpoint requests"
 )
-
-# =========================
-# SOC / ANOMALY DETECTION
-# =========================
 
 anomaly_detection_total = Counter(
     "anomaly_detection_total",
@@ -231,14 +203,11 @@ from starlette.responses import JSONResponse, Response
 from app.core.database import SessionLocal
 from app.utils.logger import logger, persist_alert, security_monitor
 
-# Endpoints that stay reachable while the system is quarantined,
-# otherwise the operator could not lift the quarantine without restarting.
 QUARANTINE_WHITELIST = {
     "/security/status",
     "/security/quarantine/release",
     "/health",
 }
-
 
 class MonitoringMiddleware(BaseHTTPMiddleware):
     """Counts requests, runs anomaly analysis, persists SOC events."""
@@ -246,7 +215,6 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
 
-        # Quarantine: read-only OR explicitly whitelisted endpoints only.
         if (
             security_monitor.quarantined
             and path not in QUARANTINE_WHITELIST
@@ -273,7 +241,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
 
-        except Exception as exc:  # pragma: no cover
+        except Exception as exc:                    
 
             server_errors_total.inc()
 
@@ -286,7 +254,6 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
 
         elapsed_ms = (time.perf_counter() - start) * 1000
 
-        # SOC: persist auth events based on response status (with cooldowns).
         if response.status_code == 401:
 
             failed_logins_total.inc()
@@ -295,7 +262,6 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
 
             security_monitor.record_auth_failure()
 
-            # /auth/login already persists its own alert in auth_service.
             if path != "/auth/login" and security_monitor.can_alert(
                 f"jwt_invalid:{path}",
                 cooldown=60,
@@ -336,8 +302,6 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                 finally:
                     db.close()
 
-        # Periodic monitor analysis (multi-vector correlation, ransomware,
-        # API flood, write burst, auto-containment) — all SOC-relevant.
         anomalies = security_monitor.analyze()
 
         if anomalies:

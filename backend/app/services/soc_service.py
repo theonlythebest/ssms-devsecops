@@ -10,14 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.models.alert import Alert
 
-# Categories that belong on the SOC feed.
-#   security  - quarantine, ransomware-pattern, write spikes, request bursts
-#   auth      - failed logins, invalid tokens, unauthorized admin actions
-#   anomaly   - sales anomalies (high-value, off-hours, refund/cancel bursts)
-#   barcode   - unknown / suspicious barcode scans
-#   system    - backend lifecycle, latency spikes, repeated 5xx
+                                                               
 SOC_CATEGORIES: tuple[str, ...] = ("security", "auth", "anomaly", "barcode", "system")
-
 
 def list_soc_events(db: Session, limit: int = 50) -> list[Alert]:
     """Return SOC events newest-first, excluding stock/cctv/web noise."""
@@ -28,7 +22,6 @@ def list_soc_events(db: Session, limit: int = 50) -> list[Alert]:
         .limit(limit)
         .all()
     )
-
 
 def count_by_severity(db: Session) -> dict[str, int]:
     """Tiny helper for SOC summary widgets — counts open events by severity."""

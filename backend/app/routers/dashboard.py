@@ -10,11 +10,9 @@ from app.services import dashboard_service
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
-
 @router.get("/summary", response_model=DashboardSummary)
 def summary(db: Session = Depends(get_db)):
     return dashboard_service.build_summary(db)
-
 
 @router.get("/alerts", response_model=list[AlertOut])
 def alerts(limit: int = 25, db: Session = Depends(get_db)):

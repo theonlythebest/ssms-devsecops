@@ -1,11 +1,9 @@
-# ---- Terraform ----
 .terraform/
 terraform.tfstate
 terraform.tfstate.backup
 *.tfstate
 *.tfstate.*
 
-# ---- Python ----
 venv/
 .venv/
 __pycache__/
@@ -14,25 +12,28 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
-# ---- Secrets / env ----
 .env
 .env.*
 !.env.example
 
-# ---- Local DB ----
 backend/ssms.db
 backend/*.db
 
-# ---- Editor / OS ----
 *.swp
 *.swo
 .DS_Store
 .idea/
 .vscode/
 
-# ---- CI / security scan outputs (we publish via artifacts/SARIF instead) ----
 trivy-*.sarif
 trivy-*.json
 bandit-*.sarif
 bandit-*.json
 semgrep-*.sarif
+
+tools/camera_worker/yolov8n.pt
+tools/camera_worker/yolov8*.pt
+tools/camera_worker/*.mp4
+tools/camera_worker/*.avi
+tools/camera_worker/screenshots/
+Rapport-DevSecOps-SSMS-FR.pdf

@@ -20,18 +20,14 @@ from app.core.config import settings
 
 logger = logging.getLogger("ssms.db")
 
-
 class Base(DeclarativeBase):
     """Declarative base class for all ORM models."""
-
 
 def _is_mysql_like(url):
     return url.startswith("mysql") or url.startswith("mariadb")
 
-
 def _is_sqlite(url):
     return url.startswith("sqlite")
-
 
 def _make_engine(url):
     """Create a SQLAlchemy engine with sensible defaults for the URL scheme."""
@@ -43,8 +39,7 @@ def _make_engine(url):
         )
 
     if _is_mysql_like(url):
-        # pool_pre_ping recycles stale conns; pool_recycle dodges MariaDB's
-        # wait_timeout (~8h default).
+
         return create_engine(
             url,
             pool_pre_ping=True,
@@ -55,7 +50,6 @@ def _make_engine(url):
         )
 
     return create_engine(url, pool_pre_ping=True, future=True)
-
 
 def _try_connect(url, retries=10, delay=2.0):
     """Try to connect to ``url`` with linear retries.
@@ -88,7 +82,6 @@ def _try_connect(url, retries=10, delay=2.0):
     )
     return None
 
-
 def _resolve_engine():
     """Pick MariaDB if reachable, else SQLite fallback."""
     primary = settings.DATABASE_URL
@@ -105,12 +98,10 @@ def _resolve_engine():
     engine = _make_engine(fallback)
     return engine, fallback
 
-
 engine, ACTIVE_DATABASE_URL = _resolve_engine()
 SessionLocal = sessionmaker(
     bind=engine, autoflush=False, autocommit=False, expire_on_commit=False
 )
-
 
 def active_backend_name():
     """Return a friendly label for the live engine."""
@@ -121,14 +112,12 @@ def active_backend_name():
         return "sqlite"
     return url.split(":", 1)[0]
 
-
 def init_db():
     """Create all tables (idempotent)."""
-    from app.models import alert, cctv, inventory_log, order, sale, stock, user  # noqa: F401
+    from app.models import alert, cctv, inventory_log, order, sale, stock, user              
 
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created/verified on %s.", active_backend_name())
-
 
 def get_db():
     """FastAPI dependency that yields a SQLAlchemy session."""

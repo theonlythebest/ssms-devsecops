@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-
 class WebOrder(Base):
     __tablename__ = "web_orders"
 
@@ -28,7 +27,6 @@ class WebOrder(Base):
         "WebOrderItem", back_populates="order", cascade="all, delete-orphan"
     )
 
-
 class WebOrderItem(Base):
     __tablename__ = "web_order_items"
 
@@ -40,6 +38,6 @@ class WebOrderItem(Base):
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     line_total: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    fulfillable: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # 1 = ok, 0 = stock missing
+    fulfillable: Mapped[int] = mapped_column(Integer, default=1, nullable=False)                             
 
     order: Mapped["WebOrder"] = relationship("WebOrder", back_populates="items")

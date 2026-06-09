@@ -86,7 +86,6 @@
         }
         .card.flash { animation: scanFlash .9s ease-out; }
 
-        /* ===== SOC EVENTS PANEL ===== */
         .soc-card {
             border: 1px solid var(--border);
             background: linear-gradient(180deg, rgba(239,68,68,.04), transparent 40%), var(--panel);
@@ -138,7 +137,6 @@
         .soc-cat-barcode  { color: #a78bfa; background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.4); }
         .soc-cat-system   { color: #4fc3f7; background: rgba(79,195,247,.10); border-color: rgba(79,195,247,.4); }
 
-        /* ===== PROMOTIONS — analytics-style cards ===== */
         .promo-section { margin-top: 18px; }
         .promo-section:first-child { margin-top: 0; }
         .promo-section-header {
@@ -248,7 +246,88 @@
             border: 1px dashed var(--border);
             border-radius: 10px;
         }
-    </style>
+
+        .cctv-card {
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(239,68,68,.06), transparent 35%), var(--panel);
+            position: relative;
+        }
+        .cctv-card h2 .cctv-badges { float: right; font-size: 11px; font-weight: 600; }
+        .cctv-card h2 .cctv-badges span {
+            display: inline-block; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+        .cctv-card h2 .cctv-badges .live  { color: #ef4444; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.45); }
+        .cctv-card h2 .cctv-badges .total { color: #4fc3f7; background: rgba(79,195,247,.12); border: 1px solid rgba(79,195,247,.45); }
+
+        #cctv-feed { max-height: 320px; overflow: auto; padding-right: 4px; }
+        .cctv-item {
+            position: relative;
+            display: grid; grid-template-columns: 80px 1fr 60px 60px; gap: 12px;
+            align-items: center;
+            padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+            margin-bottom: 8px;
+            background: #0c1117;
+            font-size: 13px;
+            transition: background .25s ease, border-color .25s ease, transform .2s ease;
+        }
+        .cctv-item:last-child { margin-bottom: 0; }
+        .cctv-item:hover { border-color: rgba(239,68,68,.4); }
+        .cctv-item .ts {
+            color: var(--muted);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+        .cctv-item .zone-pill {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            background: rgba(239,68,68,.10); color: #ef4444;
+            border: 1px solid rgba(239,68,68,.4);
+            font-size: 10px; font-weight: 700; letter-spacing: .5px;
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+        .cctv-item .note { color: var(--text); font-size: 13px; }
+        .cctv-item .score {
+            font-size: 18px; font-weight: 800;
+            color: #ef4444;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+        }
+        .cctv-item .people {
+            display: inline-flex; align-items: center; gap: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            justify-content: flex-end;
+        }
+        .cctv-item.fresh {
+            border-color: #ef4444;
+            background: rgba(239,68,68,.12);
+            animation: cctvAlert 1.8s ease-out;
+        }
+        @keyframes cctvAlert {
+            0%   { transform: translateX(-12px); opacity: 0; box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+            20%  { transform: translateX(0);     opacity: 1; box-shadow: 0 0 0 6px rgba(239,68,68,.35); }
+            100% {                                          box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+        .cctv-empty {
+            padding: 16px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 13px;
+            font-style: italic;
+            background: #0c1117;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+        }
+        .cctv-empty::before {
+            content: ""; display: inline-block;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e; margin-right: 8px;
+            box-shadow: 0 0 8px rgba(34,197,94,.7);
+            vertical-align: middle;
+            animation: hb 1.6s ease-in-out infinite;
+        }</style>
 </head>
 <body>
     <header class="topbar">
@@ -315,6 +394,16 @@
                 <thead><tr><th>Time</th><th>Category</th><th>Severity</th><th>Message</th></tr></thead>
                 <tbody></tbody>
             </table>
+        </section>
+
+        <section class="card cctv-card">
+            <h2>Live CCTV Alerts <span class="hint" style="margin-left:8px;">YOLOv8 intrusion feed · updates every 5s</span>
+                <span class="cctv-badges">
+                    <span class="live"  id="cctv-count-live"  title="Intrusions in the last 60s">0</span>
+                    <span class="total" id="cctv-count-total" title="Total intrusions tracked">0</span>
+                </span>
+            </h2>
+            <div id="cctv-feed"></div>
         </section>
 
         <section class="two-col">

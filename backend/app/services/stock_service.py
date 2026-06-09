@@ -13,7 +13,6 @@ from app.utils.logger import logger, persist_alert
 
 NEAR_EXPIRY_DAYS = 5
 
-
 def _enrich(item: StockItem) -> StockItemOut:
     days_remaining = None
     is_expired = False
@@ -33,7 +32,6 @@ def _enrich(item: StockItem) -> StockItemOut:
         is_low_stock=is_low_stock,
     )
 
-
 def create_item(db: Session, payload: StockItemCreate) -> StockItemOut:
     if db.query(StockItem).filter(StockItem.name == payload.name).first():
         raise HTTPException(status_code=400, detail="Item already exists")
@@ -41,7 +39,6 @@ def create_item(db: Session, payload: StockItemCreate) -> StockItemOut:
     db.add(item); db.commit(); db.refresh(item)
     logger.info("Stock item created: %s", item.name)
     return _enrich(item)
-
 
 def update_item(db: Session, item_id: int, payload: StockItemUpdate) -> StockItemOut:
     item = db.query(StockItem).filter(StockItem.id == item_id).first()
@@ -55,10 +52,8 @@ def update_item(db: Session, item_id: int, payload: StockItemUpdate) -> StockIte
                       f"Low stock: {item.name} ({item.quantity} remaining)")
     return _enrich(item)
 
-
 def list_items(db: Session) -> list[StockItemOut]:
     return [_enrich(i) for i in db.query(StockItem).order_by(StockItem.name).all()]
-
 
 def list_expired(db: Session) -> list[StockItemOut]:
     today = date.today()
@@ -67,14 +62,11 @@ def list_expired(db: Session) -> list[StockItemOut]:
                .filter(StockItem.expiry_date < today).all())
     return [_enrich(i) for i in items]
 
-
 def list_near_expiry(db: Session) -> list[StockItemOut]:
     return [i for i in list_items(db) if i.is_near_expiry]
 
-
 def list_low_stock(db: Session) -> list[StockItemOut]:
     return [i for i in list_items(db) if i.is_low_stock]
-
 
 def scan_and_alert(db: Session) -> int:
     raised = 0
@@ -92,13 +84,11 @@ def scan_and_alert(db: Session) -> int:
             raised += 1
     return raised
 
-
 def get_item_by_id(db: Session, item_id: int) -> StockItem:
     item = db.query(StockItem).filter(StockItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Product not found")
     return item
-
 
 def scan_product(db: Session, product_id: int, action: str = "sell",
                  *, username: str | None = None) -> dict:
@@ -131,23 +121,20 @@ def scan_product(db: Session, product_id: int, action: str = "sell",
             "new_quantity": product.quantity,
             "sale_id": sale_id, "sale_total": sale_total}
 
-
 def get_item_by_barcode(db: Session, barcode: str) -> StockItem:
     item = db.query(StockItem).filter(StockItem.barcode == barcode).first()
     if not item:
-        # SOC event: a real or potentially suspicious unknown-barcode scan.
+                                                                           
         persist_alert(db, "barcode", "warning",
                       f"Unknown barcode scanned: '{barcode}'")
         raise HTTPException(status_code=404,
                             detail=f"No product found for barcode '{barcode}'")
     return item
 
-
 def scan_by_barcode(db: Session, barcode: str, action: str = "sell",
                     *, username: str | None = None) -> dict:
     product = get_item_by_barcode(db, barcode)
     return scan_product(db, product.id, action, username=username)
-
 
 def compute_kpi(db: Session) -> StockKPI:
     items = list_items(db)

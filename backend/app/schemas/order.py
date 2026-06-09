@@ -6,15 +6,12 @@ from typing import List
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 class WebOrderItemCreate(BaseModel):
     product_name: str
     quantity: int = Field(ge=1, default=1)
 
-
 class WebOrderCreate(BaseModel):
     items: List[WebOrderItemCreate]
-
 
 class WebOrderItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,7 +22,6 @@ class WebOrderItemOut(BaseModel):
     line_total: float
     fulfillable: int
 
-
 class WebOrderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -34,7 +30,6 @@ class WebOrderOut(BaseModel):
     total: float
     created_at: datetime
     items: List[WebOrderItemOut] = []
-
 
 class WebAnalytics(BaseModel):
     total_orders: int

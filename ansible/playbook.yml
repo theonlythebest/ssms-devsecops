@@ -1,20 +1,4 @@
 ---
-# ---------------------------------------------------------------------------
-# Top-level playbook for the SSMS DevSecOps project.
-#
-# Targets a fresh Ubuntu EC2 instance provisioned by Terraform and brings the
-# full stack online:
-#   1. common  - OS hardening + base packages
-#   2. docker  - Docker Engine + Compose plugin
-#   3. ssms    - clone repo, write .env, `docker compose up -d`, smoke tests
-#
-# Run with:
-#   ansible-playbook -i inventory.ini playbook.yml
-#
-# Re-runs are idempotent: existing Docker installs stay put, the repo is
-# fast-forwarded instead of re-cloned, and compose only restarts containers
-# whose images / config actually changed.
-# ---------------------------------------------------------------------------
 
 - name: Deploy SSMS DevSecOps stack
   hosts: ssms

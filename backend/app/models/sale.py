@@ -9,14 +9,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-
 class Sale(Base):
     __tablename__ = "sales"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     cashier: Mapped[str] = mapped_column(String(64), default="system", nullable=False)
     total: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    status: Mapped[str] = mapped_column(String(32), default="completed", nullable=False)  # completed / refunded / cancelled
+    status: Mapped[str] = mapped_column(String(32), default="completed", nullable=False)                                    
     is_refund: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -28,7 +27,6 @@ class Sale(Base):
     items: Mapped[List["SaleItem"]] = relationship(
         "SaleItem", back_populates="sale", cascade="all, delete-orphan"
     )
-
 
 class SaleItem(Base):
     __tablename__ = "sale_items"

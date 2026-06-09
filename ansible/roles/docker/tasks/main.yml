@@ -1,8 +1,4 @@
 ---
-# ---------------------------------------------------------------------------
-# Install Docker Engine + Compose v2 plugin on Ubuntu.
-# Idempotent: skips apt key/repo work if already configured.
-# ---------------------------------------------------------------------------
 
 - name: Ensure /etc/apt/keyrings exists
   ansible.builtin.file:

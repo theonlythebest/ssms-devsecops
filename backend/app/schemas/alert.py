@@ -5,7 +5,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-
 class AlertOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -14,7 +13,6 @@ class AlertOut(BaseModel):
     message: str
     resolved: bool
     created_at: datetime
-
 
 class DashboardSummary(BaseModel):
     total_revenue: float

@@ -12,9 +12,8 @@ from app.models.cctv import CCTVEvent
 from app.schemas.cctv import CCTVEventCreate, LayoutSuggestion, ZoneStat
 from app.utils.logger import logger, persist_alert
 
-CROWDED_THRESHOLD = 20  # people in a single sample
-SPIKE_FACTOR = 2.5  # current sample is N x average
-
+CROWDED_THRESHOLD = 20                             
+SPIKE_FACTOR = 2.5                                 
 
 def record_event(db: Session, payload: CCTVEventCreate) -> CCTVEvent:
     event = CCTVEvent(**payload.model_dump())
@@ -30,7 +29,6 @@ def record_event(db: Session, payload: CCTVEventCreate) -> CCTVEvent:
             f"Crowded zone '{event.zone}': {event.people_count} people",
         )
 
-    # detect abnormal traffic spike vs the zone's recent baseline
     baseline_cutoff = datetime.now(timezone.utc) - timedelta(hours=6)
     samples = (
         db.query(CCTVEvent.people_count)
@@ -52,13 +50,11 @@ def record_event(db: Session, payload: CCTVEventCreate) -> CCTVEvent:
     logger.info("CCTV event recorded: zone=%s people=%d", event.zone, event.people_count)
     return event
 
-
 def list_events(db: Session, zone: str | None = None, limit: int = 100) -> list[CCTVEvent]:
     q = db.query(CCTVEvent)
     if zone:
         q = q.filter(CCTVEvent.zone == zone)
     return q.order_by(CCTVEvent.timestamp.desc()).limit(limit).all()
-
 
 def per_zone_stats(db: Session) -> list[ZoneStat]:
     rows = db.query(CCTVEvent).all()
@@ -81,7 +77,6 @@ def per_zone_stats(db: Session) -> list[ZoneStat]:
         )
     return sorted(stats, key=lambda s: s.avg_people, reverse=True)
 
-
 def layout_suggestion(db: Session) -> LayoutSuggestion:
     stats = per_zone_stats(db)
     if not stats:
@@ -97,7 +92,6 @@ def layout_suggestion(db: Session) -> LayoutSuggestion:
         f"reorganize or de-emphasize {', '.join(bottom)} to free up floor space."
     )
     return LayoutSuggestion(high_traffic_zones=top, low_traffic_zones=bottom, recommendation=rec)
-
 
 def detect_anomalies(db: Session) -> list[dict]:
     """Recompute anomalies across the most recent window — used by the dashboard."""
@@ -120,7 +114,6 @@ def detect_anomalies(db: Session) -> list[dict]:
                 }
             )
     return out
-
 
 def get_event(db: Session, event_id: int) -> CCTVEvent:
     e = db.query(CCTVEvent).filter(CCTVEvent.id == event_id).first()

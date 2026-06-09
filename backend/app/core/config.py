@@ -4,12 +4,10 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-
 def _bool(value: str | None, default: bool = False) -> bool:
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
-
 
 @dataclass(frozen=True)
 class Settings:
@@ -18,7 +16,6 @@ class Settings:
     APP_NAME: str = "Smart Store Management System (SSMS)"
     APP_VERSION: str = "1.0.0"
 
-    # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
         "mysql+pymysql://ssmsuser:strongpassword@mariadb:3306/ssms?charset=utf8mb4",
@@ -29,7 +26,6 @@ class Settings:
         "sqlite:///./ssms.db"
     )
 
-    # Auth / JWT
     JWT_SECRET: str = os.getenv(
         "JWT_SECRET",
         "change-me-in-production"
@@ -44,13 +40,11 @@ class Settings:
         os.getenv("JWT_EXPIRE_MINUTES", "60")
     )
 
-    # Behavior flags
     SEED_ON_STARTUP: bool = _bool(
         os.getenv("SEED_ON_STARTUP"),
         default=True
     )
 
-    # Security thresholds (cybersecurity module)
     WRITE_BURST_THRESHOLD: int = int(
         os.getenv("WRITE_BURST_THRESHOLD", "30")
     )
@@ -62,6 +56,5 @@ class Settings:
     REQUEST_BURST_THRESHOLD: int = int(
         os.getenv("REQUEST_BURST_THRESHOLD", "120")
     )
-
 
 settings = Settings()

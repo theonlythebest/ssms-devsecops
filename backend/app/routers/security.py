@@ -10,12 +10,10 @@ from app.utils.logger import persist_alert, security_monitor
 
 router = APIRouter(prefix="/security", tags=["security"])
 
-
 @router.get("/status")
 def status():
     """Return current monitoring counters and quarantine state."""
     return security_monitor.stats()
-
 
 @router.post("/quarantine/release")
 def release(
@@ -34,7 +32,6 @@ def release(
             f"Quarantine released by admin '{user.username}'",
         )
     return {"quarantined": False, "message": "Quarantine released."}
-
 
 @router.post("/quarantine/trigger")
 def trigger(

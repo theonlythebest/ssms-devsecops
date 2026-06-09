@@ -91,7 +91,6 @@ resource "aws_instance" "ssms_vm" {
   ]
 
   user_data = <<-EOF
-              #!/bin/bash
               apt update -y
               apt install docker.io docker-compose -y
               systemctl start docker
