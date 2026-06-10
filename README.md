@@ -1,6 +1,6 @@
 # SSMS - Smart Store Management System
 
-Projet de fin d'études (Bac+3 Cybersécurité).
+Projet d'alternance, 2026. (Bac+3 Cybersécurité).
 
 C'est une petite application de gestion de magasin (caisse, stock, commandes
 web, surveillance par caméra), et autour de cette application j'ai mis en
@@ -60,7 +60,7 @@ qu'on sait construire toute l'infrastructure DevSecOps autour.
 ## 3. Comment les outils se parlent
 
 ```
-   Toi (developpeur)
+    developpeur
         |
         | git push
         v
@@ -100,14 +100,12 @@ qu'on sait construire toute l'infrastructure DevSecOps autour.
 +---------------------+
         ^
         |
-        |  camera_worker.py (sur ton PC)
+        |  camera_worker.py 
         |  envoie les alertes d'intrusion
         |  via POST /cctv/events
 ```
 
-En une phrase : *tu push -> GitHub teste -> Ansible déploie -> les conteneurs
-tournent et se parlent entre eux, ton script caméra envoie ses alertes au
-backend depuis l'extérieur*.
+
 
 ---
 
@@ -375,4 +373,4 @@ Pour le détail complet, voir [SECURITY.md](SECURITY.md). En 30 secondes :
 
 ## Auteur
 
-Sarran - projet de fin de cycle, Bac+3 Cybersécurité, 2026.
+Sarran - 2026.
