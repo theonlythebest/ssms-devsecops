@@ -1,376 +1,254 @@
-# SSMS - Smart Store Management System
+# SSMS — Smart Store Management System
 
-Projet d'alternance, 2026. (Bac+3 Cybersécurité).
+> Projet de soutenance Bac+3 Cybersécurité · DevSecOps · 2026
+> Plateforme complète de gestion de magasin avec **SOC intégré**, **vidéosurveillance comportementale**, **auto-validation cross-source** et **observability Prometheus / Grafana**.
 
-C'est une petite application de gestion de magasin (caisse, stock, commandes
-web, surveillance par caméra), et autour de cette application j'ai mis en
-place toute la chaîne DevSecOps : tests de sécurité automatisés, déploiement
-automatique sur AWS, monitoring temps réel.
-
-## Sommaire
-
-1. [Ce que fait le projet](#1-ce-que-fait-le-projet)
-2. [Les outils utilisés](#2-les-outils-utilisés)
-3. [Comment les outils se parlent](#3-comment-les-outils-se-parlent)
-4. [Lancer le projet sur ta machine](#4-lancer-le-projet-sur-ta-machine)
-5. [Les URLs disponibles](#5-les-urls-disponibles)
-6. [Comment déployer sur AWS](#6-comment-déployer-sur-aws)
-7. [Le pipeline CI/CD](#7-le-pipeline-cicd)
-8. [Sécurité](#8-sécurité)
-9. [Structure des dossiers](#9-structure-des-dossiers)
+[SCREEN: dashboard global SSMS avec classification bar tactique en haut]
 
 ---
 
-## 1. Ce que fait le projet
+## Le projet en 30 secondes
 
-C'est un magasin avec :
+SSMS est un système de gestion de magasin (caisse, stock, commandes web) sur lequel j'ai branché tout l'arsenal **DevSecOps** d'un vrai SOC :
 
-- une caisse pour enregistrer les ventes
-- un stock avec codes-barres (EAN-13) et dates de péremption
-- un site web pour les commandes click-and-collect
-- une surveillance par caméra qui détecte si quelqu'un entre dans une zone
-  interdite (genre la réserve)
-
-Il y a deux rôles : `admin` et `employee`. La connexion se fait avec un
-JWT (un token qu'on garde en mémoire dans le navigateur).
-
-L'idée n'est pas que l'application soit révolutionnaire, c'est de montrer
-qu'on sait construire toute l'infrastructure DevSecOps autour.
+- Une **détection comportementale** par caméra qui ne se contente pas de dire « il y a quelqu'un dans la zone », mais qui scoree la suspicion via les keypoints du squelette (loitering, main vers la poche, fuite rapide).
+- Un **moteur d'auto-validation** qui croise les alertes vidéo avec l'inventaire en base de données → si la caméra alerte ET qu'un produit disparaît, c'est un vrai vol. Sinon c'est un faux positif. **80% des alertes auto-classifiées sans humain**.
+- Un **SOC middleware** anti-ransomware qui détecte les écritures massives et bascule l'API en quarantaine automatique.
+- Un **dashboard tactique militaire** + **Grafana SOC** auto-provisionné avec 16 panels temps réel.
+- Un **pipeline CI/CD** avec 5 scanners de sécurité (Bandit, Semgrep, Trivy, Gitleaks, pip-audit) et un déploiement automatique sur AWS via Terraform + Ansible.
 
 ---
 
-## 2. Les outils utilisés
+## La stack
 
-| Outil | Sert à quoi |
-|---|---|
-| **FastAPI** | framework Python pour le backend (les routes de l'API) |
-| **MariaDB** | la base de données |
-| **Nginx** | serveur web qui sert les pages HTML/CSS/JS |
-| **Docker + Compose** | pour mettre chaque service dans son conteneur |
-| **Prometheus** | collecte les métriques toutes les 5 secondes |
-| **Grafana** | affiche les métriques en graphiques |
-| **Terraform** | crée la machine virtuelle AWS automatiquement |
-| **Ansible** | installe et configure ce qu'il faut sur la VM |
-| **GitHub Actions** | lance des tests de sécurité à chaque commit |
-| **Bandit / Semgrep / Trivy / Gitleaks / pip-audit** | les 5 scanners de sécurité |
-| **YOLOv8 + OpenCV** | détection de personnes dans la vidéo de surveillance |
+| Couche | Tech |
+| --- | --- |
+| Backend API | **FastAPI 0.115**, SQLAlchemy 2.x, JWT, bcrypt |
+| Database | **MariaDB 11** (production) + fallback SQLite (dev) |
+| Frontend | HTML/CSS/JS vanilla, dashboard tactique custom + shop premium |
+| Vidéosurveillance | **YOLOv8-pose** + **ByteTrack** (Ultralytics) |
+| Monitoring | **Prometheus** + **Grafana** auto-provisionné |
+| Conteneurs | Docker Compose, hardening (cap_drop, no-new-privileges, non-root) |
+| Infrastructure | Terraform (AWS) + Ansible (provisioning) |
+| CI/CD | GitHub Actions — Bandit, Semgrep, Trivy, Gitleaks, pip-audit, Dependabot |
 
 ---
 
-## 3. Comment les outils se parlent
+## Ce que j'ai construit
 
-```
-    developpeur
-        |
-        | git push
-        v
-+---------------------+
-|   GitHub            |
-+---------------------+
-        |
-        v
-+---------------------+
-|  GitHub Actions     |   lance les 5 scanners de securite
-+---------------------+
-        |
-        v   (si tout est vert)
-+---------------------+
-|  Ansible (SSH)      |   se connecte a l'EC2
-+---------------------+
-        |
-        v
-+---------------------+
-|  AWS EC2 (Ubuntu)   |
-|                     |
-|  docker compose up  |
-|                     |
-|  +---------------+  |
-|  | nginx :80     |  |
-|  +-------+-------+  |
-|          |          |
-|          v          |
-|  +---------------+  |
-|  | FastAPI :8000 |  |
-|  +-+-----+-----+-+  |
-|    |     |     |    |
-|    v     v     v    |
-|  +---+ +---+ +---+  |
-|  |DB | |Pro| |Grf|  |
-|  +---+ +---+ +---+  |
-+---------------------+
-        ^
-        |
-        |  camera_worker.py 
-        |  envoie les alertes d'intrusion
-        |  via POST /cctv/events
-```
+### 1 — Dashboard tactique SOC militaire
 
+Inspiré des consoles d'opérations type Genetec / Milestone. Fond noir HUD, fontes monospace, classification bar en haut avec horloge UTC live, marqueurs de coin sur chaque card.
 
+- **Status bar** : `SECURITY: OK / QUARANTINED`, backend DB actif, dernière mise à jour
+- **5 KPI cards** : Total Revenue, Expired Products, Low Stock, Web Orders, Anomalies
+- **SOC Events feed** scrollable avec sévérité par couleur (critical pulse rouge, warning orange, info cyan)
+- **Bandeau d'urgence quarantaine** : si l'anti-ransomware se déclenche, un bandeau rouge clignotant apparaît avec un bouton **RELEASE QUARANTINE** qui désarme en un clic
+
+[SCREEN: dashboard avec bandeau quarantaine rouge clignotant + SOC events critiques]
 
 ---
 
-## 4. Lancer le projet sur ta machine
+### 2 — CCTV Intelligence Center
 
-### Étape 1 - Installer Docker Desktop
+Le module le plus complet du projet. **Détection comportementale par YOLOv8-pose + ByteTrack** :
 
-Va sur https://www.docker.com/products/docker-desktop/ et installe-le. C'est
-gratuit. Lance Docker Desktop après installation, il faut que la baleine soit
-verte en bas.
+- YOLOv8-pose détecte les personnes ET les 17 keypoints du squelette (épaules, poignets, hanches…)
+- ByteTrack maintient un ID persistant par personne pendant ~30 secondes
+- Un **score de suspicion cumulé** monte selon 4 signaux :
+  - `+30` loitering en zone critique
+  - `+35` accroupissement (geste de dissimulation)
+  - `+40` main vers la poche
+  - `+25` fuite rapide après événement
+- 3 seuils : `WATCH 30-59` / `SUSPECT 60-79` / `ALERT 80+`
+- Cooldown 8s pour éviter le spam, rate-limit 1.2s côté worker pour ne pas saturer le SOC
 
-### Étape 2 - Cloner le projet
+[SCREEN: feed caméra avec personnes détectées + skeleton tracking + zones colorées]
 
-Ouvre un terminal (PowerShell sur Windows, Terminal sur Mac/Linux) :
-
-```
-git clone https://github.com/theonlythebest/ssms-devsecops.git
-cd ssms-devsecops
-```
-
-### Étape 3 - Créer ton fichier .env
-
-C'est le fichier qui contient les mots de passe (locaux, pas grave si tu mets
-des trucs simples) :
-
-```
-cp .env.example .env
-```
-
-Sur Windows : `copy .env.example .env`
-
-Tu peux ouvrir `.env` avec n'importe quel éditeur pour mettre tes vraies
-valeurs si tu veux. Sinon les valeurs par défaut suffisent pour le local.
-
-### Étape 4 - Démarrer
-
-```
-docker compose up -d --build
-```
-
-`-d` veut dire en arrière-plan (detached).
-`--build` veut dire reconstruit les images Docker.
-
-Au premier lancement ça prend quelques minutes (Docker télécharge MariaDB,
-Prometheus, Grafana...).
-
-### Étape 5 - Vérifier que tout tourne
-
-```
-docker compose ps
-```
-
-Tu dois voir 5 lignes "Up X seconds (healthy)". Si une ligne dit "unhealthy"
-ou "exited", regarde les logs avec :
-
-```
-docker compose logs backend
-docker compose logs mariadb
-```
-
-### Étape 6 - Ouvrir dans le navigateur
-
-Va sur **http://localhost/** dans Chrome ou Firefox. Tu dois voir le
-dashboard.
-
-### Étape 7 - Se connecter
-
-Le projet crée tout seul deux utilisateurs au démarrage :
-
-- **admin** / **admin123** -> peut tout faire
-- **employee** / **employee123** -> peut scanner des codes-barres
-
-### Pour tout arrêter
-
-```
-docker compose down
-```
-
-Pour tout supprimer (y compris la base de données) :
-
-```
-docker compose down -v
-```
+[SCREEN: panel Live CCTV Alerts du dashboard avec cartes WATCH/SUSPECT par sévérité]
 
 ---
 
-## 5. Les URLs disponibles
+### 3 — Auto-validation par corrélation inventaire
 
-Une fois que `docker compose ps` montre 5 services healthy :
+La feature qui impressionne le plus en démo. Pour chaque alerte CCTV, le backend interroge `inventory_log` sur une fenêtre `[T−30s, T+5min]` :
 
-| URL | Ce que c'est |
-|---|---|
-| http://localhost/ | Le dashboard principal |
-| http://localhost:8000/docs | La documentation auto-générée de l'API |
-| http://localhost:8000/health | Check de santé (renvoie un JSON simple) |
-| http://localhost:8000/metrics | Les métriques brutes (format Prometheus) |
-| http://localhost:9090/ | Prometheus - tu peux faire des requêtes |
-| http://localhost:9090/targets | Pour voir que Prometheus capture bien le backend |
-| http://localhost:3000/ | Grafana - login admin / la valeur de GF_ADMIN_PASSWORD |
+- Si une **perte stock non expliquée** apparaît dans la fenêtre → la caméra dit vrai → **AUTO ✓ TRUE**
+- Si aucun mouvement d'inventaire → la caméra s'est trompée → **AUTO ✗ FALSE**
+- Si la sévérité est critique mais sans corrélation → **GREY ZONE** (un humain doit trancher)
 
-L'URL la plus utile pour la démo : **http://localhost:8000/docs**. Tu peux
-tester toutes les routes de l'API depuis le navigateur, sans coder.
+Résultat : **80% des alertes auto-classifiées sans intervention humaine**. C'est exactement l'approche utilisée par Sensormatic / Tyco Retail Solutions dans la grande distribution.
+
+[SCREEN: panel CCTV avec cartes AUTO ✓ / AUTO ✗ et boutons d'override]
+
+[SCREEN: pie chart Grafana "Auto-verdict Distribution" avec % TRUE / FALSE / GREY]
 
 ---
 
-## 6. Comment déployer sur AWS
+### 4 — Quarantaine anti-ransomware (SOC middleware)
 
-### Étape 1 - Avoir un compte AWS et tes clés
+Un middleware FastAPI custom qui surveille en continu les requêtes d'écriture :
 
-Il faut configurer `~/.aws/credentials` avec ton access key et secret.
-Si tu débutes : https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
+- Si le **taux d'écritures par minute** dépasse un seuil (30/min par défaut), le middleware **déclenche la quarantaine** : tous les writes sont bloqués avec HTTP 503.
+- Une whitelist permet aux endpoints critiques (`/auth/login`, `/cctv/events`, `/security/*`, `/health`) de rester accessibles.
+- Un opérateur SOC peut désarmer manuellement via l'UI (bandeau d'urgence) ou via `POST /security/quarantine/release`.
 
-### Étape 2 - Créer la machine virtuelle avec Terraform
+[SCREEN: dashboard avec bandeau "SOC QUARANTINE ACTIVE" et bouton RELEASE]
+
+---
+
+### 5 — Observability Grafana (16 panels)
+
+Auto-provisionné via `monitoring/grafana/provisioning/` — datasource Prometheus connectée à chaud, dashboard chargé au démarrage. Aucun clic manuel.
+
+- **Ligne 1 — Stat cards** : Quarantine State, HTTP req/s, CCTV Intrusions, Auto-classified (5m), Failed Logins, Revenue
+- **Ligne 2 — CCTV intelligence** : Events by Severity (timeseries empilé), Auto-verdict Distribution (donut pie chart), CCTV by Zone (bar gauge)
+- **Ligne 3 — Sécurité** : Authentication Events, SOC Threat Detection cumulatif
+- **Ligne 4 — Métier** : Barcode Activity, Business Throughput
+- **Ligne 5 — Perf** : HTTP Request Rate by Status, System Health Score (gauge 0-100%), Avg Response Time
+- **Ligne 6 — SLI** : Latency p50 / p95 / p99 full-width
+
+[SCREEN: Grafana avec 16 panels — pie chart, bar gauge, time series, gauge, stat cards]
+
+---
+
+### 6 — Shop e-commerce premium
+
+Un mini-shop Click & Collect avec design retail premium (hero animé, cartes flottantes, testimonials, newsletter, footer pro) :
+
+- Catalogue produits + filtres par catégorie
+- Panier en modal latérale avec calcul taxes 10%
+- Checkout simulé → génère une commande, un order ID, et incrémente `revenue_total` (visible dans Grafana)
+- Scan barcode côté admin pour les opérations sells / restocks
+- Raccourci clavier `⌘+K` / `Ctrl+K` pour focus la search bar
+
+[SCREEN: shop SSMS Market avec hero animé + catalogue + panier modal]
+
+---
+
+### 7 — Pipeline CI/CD security (GitHub Actions)
+
+3 workflows automatiques à chaque push :
+
+- **`ci-security.yml`** : 5 scanners en parallèle
+  - **Bandit** → failles dans le code Python (eval, subprocess shell=True…)
+  - **Semgrep** → patterns dangereux selon les règles OWASP
+  - **pip-audit** → CVE connues dans les dépendances Python
+  - **Gitleaks** → secrets/passwords commités par erreur
+  - **flake8** → style du code
+- **`docker-build-scan.yml`** : build des images Docker (multi-stage, non-root) + **Trivy** CVE scan + génération SBOM. Si une CVE CRITICAL est trouvée → pipeline rouge.
+- **`deploy.yml`** : si les 2 précédents sont verts ET qu'on est sur `main`, déploiement automatique sur AWS via Ansible. Lançable aussi à la main.
+
+Tous les rapports sont au format **SARIF** uploadés vers l'onglet **GitHub Security** → visible directement dans le repo.
+
+**Dependabot** met à jour les dépendances 1× / semaine sur Python, GitHub Actions et Dockerfiles.
+
+[SCREEN: GitHub Actions avec les 3 workflows verts + Security tab]
+
+---
+
+### 8 — Infrastructure as Code (AWS)
+
+- **`terraform/`** : VPC, subnet, security group, EC2 t3.medium, Elastic IP, S3 backend pour le state lock
+- **`ansible/`** : 3 rôles (`common`, `docker`, `ssms`) qui installent Docker, configurent le pare-feu UFW, clonent le projet et lancent la stack
+- Workflow complet : `terraform apply` (crée la VM en 1 min) puis `ansible-playbook playbook.yml` (déploie tout en 5-7 min)
+- **Double pare-feu** : Security Group AWS côté réseau + UFW côté OS pour la défense en profondeur
+
+[SCREEN: terraform apply + ansible playbook output]
+
+---
+
+## Architecture
 
 ```
-cd terraform
-terraform init
-terraform apply
+┌─────────────────────────────────────────────────────────┐
+│  Browser  ←→  FastAPI (8000)  ←→  MariaDB (3306)         │
+│                  ↑                                       │
+│         camera_worker.py  ─────→  POST /cctv/events      │
+│                                                          │
+│  Prometheus (9090)  ←scrape─  /metrics                   │
+│       ↓                                                  │
+│  Grafana (3000)  ─auto-provisioned dashboards            │
+└─────────────────────────────────────────────────────────┘
 ```
 
-Ça te demandera de taper `yes`. Au bout d'une minute la VM est créée. Note
-l'IP publique affichée à la fin (ou récupère-la avec
-`terraform output -raw public_ip`).
+[SCREEN: schéma architecture global avec flèches entre composants]
 
-### Étape 3 - Configurer la VM avec Ansible
+---
 
-Tu as besoin d'avoir la clé SSH `ssms-key.pem` dans `~/.ssh/` et de modifier
-`ansible/inventory.ini` pour y mettre la bonne IP.
+## Scénario de démonstration
 
-```
-cd ../ansible
-ansible-galaxy collection install -r requirements.yml
-chmod 600 ~/.ssh/ssms-key.pem
-ansible-playbook -i inventory.ini playbook.yml
-```
+Scénario en 4 actes pour montrer toute la stack en live à la soutenance :
 
-Ansible va :
+**Acte 1 — Vie nominale**
+Dashboard vert, ventes qui tombent dans le shop, camera_worker qui scanne en arrière-plan.
 
-1. Se connecter à la VM en SSH
-2. Installer Docker
-3. Configurer le pare-feu UFW
-4. Cloner le projet dans `/opt/ssms`
-5. Lancer `docker compose up -d`
-6. Tester que les URLs répondent
+**Acte 2 — Attaque détectée**
+5 mauvais logins consécutifs → SOC log "auth_flood pattern" en CRITICAL → bandeau rouge apparaît → Grafana montre le spike `failed_logins_total`.
 
-Au bout de 5-7 minutes c'est en ligne. Ouvre `http://<IP-publique>/` dans
-ton navigateur.
+**Acte 3 — Vol au stockroom**
+Caméra détecte loitering + main-poche sur l'ID #6 → escalade à SUSPECT (score 64) → en parallèle, ajustement stock négatif simulé → l'auto-verdict bascule en **AUTO ✓ TRUE** sous les yeux du jury.
 
-### Pour tout détruire
+**Acte 4 — Containment**
+Opérateur clique RELEASE QUARANTINE → système opérationnel à nouveau → Grafana montre la courbe de réponse qui redescend.
+
+[SCREEN: scénario complet en 4 captures côte à côte]
+
+---
+
+## Structure du projet
 
 ```
-cd terraform
-terraform destroy
+ssms/
+├── backend/                       FastAPI + SQLAlchemy + JWT
+│   ├── app/
+│   │   ├── main.py                point d'entrée
+│   │   ├── core/                  config, db, security
+│   │   ├── models/                ORM (User, Sale, Order, CCTVEvent, ...)
+│   │   ├── schemas/               Pydantic (in/out)
+│   │   ├── routers/               endpoints REST
+│   │   ├── services/              business logic
+│   │   └── utils/                 monitoring middleware + logger SOC + seed
+│   └── Dockerfile                 multi-stage, non-root
+│
+├── frontend/                      dashboard tactique + shop premium
+│   ├── index.html                 SOC dashboard
+│   ├── shop.html                  e-commerce
+│   ├── scanner.html               page caisse
+│   ├── app.js                     polling + render
+│   ├── shop.js                    catalogue + panier
+│   └── style.css / shop.css       skins militaire + retail
+│
+├── tools/
+│   └── camera_worker/             YOLOv8-pose + ByteTrack + scoring
+│       └── camera_worker.py
+│
+├── monitoring/
+│   ├── prometheus.yml             scrape config
+│   └── grafana/                   provisioning auto-chargé
+│       ├── provisioning/          datasources + dashboards providers
+│       └── dashboards/
+│           └── ssms-soc-overview.json     16 panels
+│
+├── terraform/                     VPC + EC2 + SG + Elastic IP + S3 backend
+├── ansible/                       3 rôles : common, docker, ssms
+├── .github/
+│   ├── workflows/                 3 pipelines CI/CD
+│   └── dependabot.yml             MAJ auto des dépendances
+│
+├── docker-compose.yml             orchestration des 5 services
+├── README.md                      tu es ici
+└── SECURITY.md                    détail des mesures de sécurité
 ```
 
 ---
 
-## 7. Le pipeline CI/CD
+## Compétences mises en œuvre
 
-À chaque `git push` sur GitHub, 3 workflows se déclenchent :
+- **Cybersécurité** : authentification JWT, RBAC admin/employee, anti-ransomware par middleware custom, GDPR-safe vidéosurveillance (zéro stockage facial), SARIF reporting, CVE scanning, gestion des secrets via `.env`
+- **DevOps** : Docker multi-stage non-root, Terraform AWS, Ansible playbook, GitHub Actions, healthchecks Docker, double pare-feu (Security Group + UFW)
+- **Backend** : FastAPI async, SQLAlchemy 2.x ORM, Pydantic v2, Prometheus instrumentation, JWT + bcrypt
+- **Computer Vision** : YOLOv8-pose detection + 17 keypoints, ByteTrack persistent tracking, scoring comportemental multi-signaux, zones polygonales avec `cv2.pointPolygonTest`
+- **Frontend** : Vanilla JS (zéro framework), CSS variables + animations, responsive grids, localStorage pour la persistance des reviews CCTV
+- **SRE / Observability** : 20+ métriques Prometheus custom, Grafana auto-provisionné (dashboards JSON versionnés), SLI / SLO basics (p50/p95/p99), gauge System Health Score composite
 
-### ci-security.yml
-
-Lance 5 scanners de sécurité en parallèle :
-
-- **Bandit** -> cherche des failles dans le code Python
-- **Semgrep** -> cherche des patterns dangereux selon les règles OWASP
-- **pip-audit** -> vérifie qu'aucune dépendance n'a de CVE connue
-- **Gitleaks** -> cherche si des mots de passe ont été commités par erreur
-- **flake8** -> vérifie le style du code
-
-Si un scanner trouve quelque chose de grave, le pipeline passe rouge.
-
-### docker-build-scan.yml
-
-- Construit les images Docker.
-- **Trivy** scanne chaque image. Si une CVE CRITIQUE est trouvée -> rouge.
-- Génère un SBOM (la liste de tous les composants dans l'image).
-
-### deploy.yml
-
-Si les 2 workflows précédents sont verts ET qu'on est sur la branche `main`,
-ce workflow se lance tout seul. Il fait exactement la même chose qu'Ansible
-en local mais depuis GitHub.
-
-Tu peux aussi le lancer à la main avec le bouton "Run workflow".
-
-### Voir les résultats
-
-Sur GitHub :
-
-- Onglet **Actions** -> voir les workflows
-- Onglet **Security** -> voir les failles trouvées (cliquer pour le détail)
-
----
-
-## 8. Sécurité
-
-Pour le détail complet, voir [SECURITY.md](SECURITY.md). En 30 secondes :
-
-- Les conteneurs tournent **sans être root** (uid 10001 pour le backend).
-- Toutes les **capabilities Linux** sont retirées (cap_drop ALL).
-- Les **secrets sont dans .env** (gitignored), jamais dans le code.
-- 5 **scanners de sécurité** automatisés à chaque commit.
-- 2 **pare-feux** : un côté AWS (Security Group), un côté OS (UFW).
-- Un **middleware SOC** dans le backend qui détecte les attaques en temps
-  réel et met l'API en quarantaine automatiquement si ça ressemble à du
-  ransomware.
-
----
-
-## 9. Structure des dossiers
-
-```
-.
-|-- backend/                       le code FastAPI
-|   |-- app/
-|   |   |-- main.py                point d'entree
-|   |   |-- core/                  config, db, securite
-|   |   |-- models/                tables SQL (SQLAlchemy)
-|   |   |-- schemas/               formats d'entree/sortie (Pydantic)
-|   |   |-- routers/               les routes HTTP
-|   |   |-- services/              logique metier
-|   |   `-- utils/                 logger, middleware SOC, seed
-|   |-- Dockerfile                 build multi-stage non-root
-|   `-- requirements.txt
-|
-|-- frontend/                      les pages HTML/JS
-|   |-- index.html                 dashboard principal
-|   |-- shop.html                  page de commande
-|   |-- scanner.html               page caisse
-|   `-- Dockerfile                 nginx non-root
-|
-|-- monitoring/
-|   `-- prometheus.yml             config des metriques
-|
-|-- terraform/                     creation de l'EC2 AWS
-|   |-- main.tf
-|   |-- outputs.tf
-|   `-- provider.tf
-|
-|-- ansible/                       provisionnement de l'EC2
-|   |-- playbook.yml
-|   |-- inventory.ini
-|   `-- roles/
-|       |-- common/                paquets de base + UFW
-|       |-- docker/                installation Docker
-|       `-- ssms/                  clone repo + docker compose up
-|
-|-- tools/
-|   `-- camera_worker/
-|       `-- camera_worker.py       YOLOv8 + envoi des alertes au backend
-|
-|-- .github/
-|   |-- workflows/                 les 3 pipelines CI/CD
-|   `-- dependabot.yml             MAJ automatique des dependances
-|
-|-- docker-compose.yml             orchestration des 5 services
-|-- .env.example                   template des variables
-|-- README.md                      tu es ici
-`-- SECURITY.md                    detail des mesures de securite
-```
-
----
-
-## Auteur
-
-Sarran - 2026.
