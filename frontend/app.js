@@ -227,60 +227,219 @@
         try { renderRealtime(await get("/analytics/realtime")); }
         catch (e) { console.error("analytics refresh failed", e); }
     }
+    const FB_KEY = "ssms_cctv_feedback_v1";
+    function loadFeedback() {
+        try { return JSON.parse(localStorage.getItem(FB_KEY) || "{}"); }
+        catch (e) { return {}; }
+    }
+    function saveFeedback(fb) {
+        try { localStorage.setItem(FB_KEY, JSON.stringify(fb)); } catch (e) {}
+    }
+    function markEventIds(eventIds, verdict) {
+        const fb = loadFeedback();
+        eventIds.forEach((id) => { fb[id] = verdict; });
+        saveFeedback(fb);
+    }
+    function groupVerdict(eventIds, fb) {
+        let tp = 0, fp = 0, none = 0;
+        eventIds.forEach((id) => {
+            const v = fb[id];
+            if (v === "tp") tp++;
+            else if (v === "fp") fp++;
+            else none++;
+        });
+        if (none === eventIds.length) return null;
+        return fp > tp ? "fp" : "tp";
+    }
+
 
     function renderCCTV(events) {
         const feed = $("cctv-feed");
-        const intrusions = (events || []).filter((e) => {
+        const behaviour = (events || []).filter((e) => {
             const note = (e.note || "").toUpperCase();
-            return note.includes("INTRUSION") || (e.activity_score || 0) >= 80;
+            if (note === "HEARTBEAT") return false;
+            if (note.match(/INTRUSION|SUSPECT|WATCH|SUSPICIOUS/)) return true;
+            return (e.activity_score || 0) >= 30;
         });
 
+        function severityOf(e) {
+            const note = (e.note || "").toUpperCase();
+            const score = e.activity_score || 0;
+            if (note.includes("INTRUSION") || score >= 80) return "alert";
+            if (note.includes("SUSPECT")   || score >= 60) return "suspect";
+            if (note.includes("WATCH")     || score >= 30) return "watch";
+            return "info";
+        }
+        const sevRank = { alert: 3, suspect: 2, watch: 1, info: 0 };
+
+        function extractTrackId(note) {
+            const m = (note || "").match(/\bID\s+(\d+)\b/i);
+            return m ? m[1] : null;
+        }
+        function extractReasons(note) {
+            const m = (note || "").match(/reasons\s+([^\s]+)/i);
+            if (!m) return [];
+            return m[1].split(",").map((r) => r.trim()).filter(Boolean);
+        }
+
         const now = Date.now();
-        const liveCount = intrusions.filter((e) =>
+        const liveCount = behaviour.filter((e) =>
             (now - new Date(e.timestamp).getTime()) < 60000
         ).length;
         $("cctv-count-live").textContent = liveCount;
-        $("cctv-count-total").textContent = intrusions.length;
+        $("cctv-count-total").textContent = behaviour.length;
 
-        if (!intrusions.length) {
-            feed.innerHTML = '<div class="cctv-empty">Perimeter clear — no intrusion detected.</div>';
+        if (!behaviour.length) {
+            feed.innerHTML = '<div class="cctv-empty">Perimeter clear - no suspicious behaviour detected.</div>';
             lastCCTVIds = new Set();
             cctvFirstRun = false;
             return;
         }
 
-        intrusions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const sigCounts = { loitering: 0, crouch: 0, hand: 0, fastexit: 0 };
+        const groups = new Map();
+        behaviour.forEach((e) => {
+            const sev = severityOf(e);
+            const noteLower = (e.note || "").toLowerCase();
+            if (noteLower.includes("loitering"))     sigCounts.loitering++;
+            if (noteLower.includes("crouch"))        sigCounts.crouch++;
+            if (noteLower.includes("hand_to_pocket"))sigCounts.hand++;
+            if (noteLower.includes("fast_exit"))     sigCounts.fastexit++;
+            const ts = new Date(e.timestamp).getTime();
+            const reasons = extractReasons(e.note);
+            const reasonsKey = reasons.sort().join(",") || "behaviour";
+            const key = sev + "|" + (e.zone || "general") + "|" + reasonsKey;
+            const tid = extractTrackId(e.note);
+            let g = groups.get(key);
+            if (!g) {
+                g = {
+                    key, count: 0, sev, zone: e.zone || "general",
+                    reasonsTxt: reasons.join(", ") || "behaviour",
+                    maxScore: 0, latestTs: 0, ids: new Set(),
+                    eventIds: [],
+                };
+                groups.set(key, g);
+            }
+            g.eventIds.push(e.id);
+            g.count += 1;
+            if (tid) g.ids.add(tid);
+            if ((e.activity_score || 0) > g.maxScore) g.maxScore = e.activity_score || 0;
+            if (ts > g.latestTs) g.latestTs = ts;
+        });
+
+        const sortedGroups = Array.from(groups.values()).sort((a, b) => {
+            if (sevRank[b.sev] !== sevRank[a.sev]) return sevRank[b.sev] - sevRank[a.sev];
+            return b.latestTs - a.latestTs;
+        });
 
         feed.innerHTML = "";
+        const fb = loadFeedback();
+        let confirmedCount = 0, falseposCount = 0;
+        Object.values(fb).forEach((v) => {
+            if (v === "tp") confirmedCount++;
+            else if (v === "fp") falseposCount++;
+        });
+        Object.entries(autoVerdicts).forEach(([eid, av]) => {
+            if (fb[eid]) return;
+            if (av.verdict === "tp") confirmedCount++;
+            else if (av.verdict === "fp") falseposCount++;
+        });
+        const cntConfirmed = $("cctv-count-confirmed");
+        const cntFalsepos  = $("cctv-count-falsepos");
+        if (cntConfirmed) cntConfirmed.textContent = "✓ " + confirmedCount;
+        if (cntFalsepos)  cntFalsepos.textContent  = "✗ " + falseposCount;
+
         const seen = new Set();
-        intrusions.slice(0, 20).forEach((e) => {
-            seen.add(e.id);
-            
-            const isFresh = !cctvFirstRun && !lastCCTVIds.has(e.id);
-            const ts = new Date(e.timestamp).toLocaleTimeString();
-            
-            const cleanNote = (e.note || "Intrusion detected")
-                .replace(/^INTRUSION:\s*/i, "")
-                .trim();
+        sortedGroups.slice(0, 8).forEach((g) => {
+            seen.add(g.key);
+            const isFresh = !cctvFirstRun && !lastCCTVIds.has(g.key);
+            const sev = g.sev;
+            const ts = new Date(g.latestTs).toLocaleTimeString();
+            const idsArr = Array.from(g.ids);
+            let idLabel;
+            if (idsArr.length === 0) idLabel = "?";
+            else if (idsArr.length === 1) idLabel = "#" + idsArr[0];
+            else if (idsArr.length <= 3) idLabel = idsArr.map((i) => "#" + i).join(" ");
+            else idLabel = idsArr.length + " IDs";
+            const countBadge = g.count > 1
+                ? '<span class="count-pill">×' + g.count + '</span>'
+                : '';
+            const peopleCount = Math.max(1, idsArr.length);
             const div = document.createElement("article");
-            div.className = "cctv-item" + (isFresh ? " fresh" : "");
+            div.className = "cctv-item sev-" + sev + (isFresh ? " fresh" : "");
+            const manualVerdict = groupVerdict(g.eventIds, fb);
+            function groupAutoVerdict(ids) {
+                let tp = 0, fp = 0, conf = 0, reason = "";
+                ids.forEach((id) => {
+                    const av = autoVerdicts[id];
+                    if (!av) return;
+                    if (av.verdict === "tp") { tp++; if (av.confidence > conf) { conf = av.confidence; reason = av.reason; } }
+                    else if (av.verdict === "fp") { fp++; if (av.confidence > conf) { conf = av.confidence; reason = av.reason; } }
+                });
+                if (tp === 0 && fp === 0) return null;
+                return { verdict: tp >= fp ? "tp" : "fp", confidence: conf, reason };
+            }
+            const autoVerdict = groupAutoVerdict(g.eventIds);
+            const effectiveVerdict = manualVerdict || (autoVerdict && autoVerdict.verdict);
+            const isAuto = !manualVerdict && autoVerdict;
+
+            let fbHTML;
+            if (manualVerdict === "tp") {
+                fbHTML = '<div class="cctv-feedback"><span class="verdict-label ok" title="Confirmed manually">VRAI</span></div>';
+            } else if (manualVerdict === "fp") {
+                fbHTML = '<div class="cctv-feedback"><span class="verdict-label no" title="Dismissed manually">FAUX</span></div>';
+            } else if (autoVerdict) {
+                const lbl = autoVerdict.verdict === "tp" ? "AUTO ✓" : "AUTO ✗";
+                const cls = autoVerdict.verdict === "tp" ? "ok auto" : "no auto";
+                const tip = (autoVerdict.reason || "") + " (conf " + Math.round((autoVerdict.confidence||0)*100) + "%)";
+                fbHTML = '<div class="cctv-feedback">' +
+                    '<span class="verdict-label ' + cls + '" title="' + escapeHTML(tip) + '">' + lbl + '</span>' +
+                    '<button type="button" class="btn-ok" data-action="tp" title="Override: vrai positif">✓</button>' +
+                    '<button type="button" class="btn-no" data-action="fp" title="Override: faux positif">✗</button>' +
+                '</div>';
+            } else {
+                fbHTML = '<div class="cctv-feedback">' +
+                    '<button type="button" class="btn-ok" data-action="tp" title="Vrai positif">✓</button>' +
+                    '<button type="button" class="btn-no" data-action="fp" title="Faux positif">✗</button>' +
+                '</div>';
+            }
+            if (effectiveVerdict === "fp") div.classList.add("reviewed-fp");
+            if (effectiveVerdict === "tp") div.classList.add("reviewed-tp");
+            if (isAuto) div.classList.add("auto-verdict");
+            div.dataset.eventIds = g.eventIds.join(",");
             div.innerHTML =
                 '<div class="ts">' + ts + '</div>' +
                 '<div>' +
-                    '<span class="zone-pill">' + escapeHTML(e.zone) + '</span>' +
-                    '<span class="note">' + escapeHTML(cleanNote) + '</span>' +
+                    '<span class="zone-pill sev-' + sev + '">' + sev.toUpperCase() + ' · ' + escapeHTML(g.zone) + '</span>' +
+                    '<span class="track-id">' + idLabel + '</span>' +
+                    countBadge +
+                    '<span class="note">' + escapeHTML(g.reasonsTxt) + '</span>' +
                 '</div>' +
-                '<div class="people">👤 ' + (e.people_count ?? 0) + '</div>' +
-                '<div class="score">' + (e.activity_score ?? 0) + '</div>';
+                '<div class="people">👤 ' + peopleCount + '</div>' +
+                '<div class="score">' + g.maxScore + '</div>' +
+                fbHTML;
             feed.appendChild(div);
         });
         lastCCTVIds = seen;
         cctvFirstRun = false;
+
+        const setCount = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+        setCount("sig-count-loitering", sigCounts.loitering);
+        setCount("sig-count-crouch",    sigCounts.crouch);
+        setCount("sig-count-hand",      sigCounts.hand);
+        setCount("sig-count-fastexit",  sigCounts.fastexit);
     }
 
+    let autoVerdicts = {};
     async function refreshCCTV() {
-        try { renderCCTV(await get("/cctv/events?limit=30")); }
-        catch (e) { console.error("cctv refresh failed", e); }
+        try {
+            const [events, av] = await Promise.all([
+                get("/cctv/events?limit=30"),
+                get("/cctv/events/auto-verdicts?limit=80").catch(() => ({})),
+            ]);
+            autoVerdicts = av || {};
+            renderCCTV(events);
+        } catch (e) { console.error("cctv refresh failed", e); }
     }
 
     function discountSeverity(pct) {
@@ -380,6 +539,26 @@
             $("last-update").textContent = "refresh failed: " + e.message;
         }
     }
+    document.addEventListener("click", (ev) => {
+        const btn = ev.target.closest(".cctv-feedback button");
+        if (!btn) return;
+        const card = btn.closest(".cctv-item");
+        if (!card || !card.dataset.eventIds) return;
+        const ids = card.dataset.eventIds.split(",").filter(Boolean).map(Number);
+        const action = btn.dataset.action;
+        markEventIds(ids, action);
+        refreshCCTV();
+    });
+    const resetBtn = $("cctv-reset-review");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+            if (confirm("Effacer toutes les revues CCTV ?")) {
+                saveFeedback({});
+                refreshCCTV();
+            }
+        });
+    }
+
 
     refreshAll();
     refreshAnalytics();

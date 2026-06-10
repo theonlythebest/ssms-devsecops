@@ -38,3 +38,8 @@ def layout(db: Session = Depends(get_db)):
 @router.get("/anomalies")
 def anomalies(db: Session = Depends(get_db)):
     return cctv_service.detect_anomalies(db)
+
+@router.get("/events/auto-verdicts")
+def events_auto_verdicts(limit: int = 80, db: Session = Depends(get_db)):
+    """Cross-correlation CCTV events x inventory_log to auto-classify alerts."""
+    return cctv_service.auto_verdict_recent(db, limit=limit)

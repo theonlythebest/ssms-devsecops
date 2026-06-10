@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SSMS — Smart Store Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="/static/style.css" />
     <style>
         .live-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
@@ -257,13 +260,121 @@
             display: inline-block; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
             font-variant-numeric: tabular-nums;
         }
-        .cctv-card h2 .cctv-badges .live  { color: #ef4444; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.45); }
-        .cctv-card h2 .cctv-badges .total { color: #4fc3f7; background: rgba(79,195,247,.12); border: 1px solid rgba(79,195,247,.45); }
+        .cctv-fused { background: linear-gradient(170deg, #0d1219 0%, #0e151c 100%); }
+        .cctv-intel-collapse {
+            margin-top: 6px; margin-bottom: 4px;
+            border: 1px solid var(--border); border-radius: 10px;
+            background: rgba(255,255,255,.012);
+        }
+        .cctv-intel-collapse > summary {
+            cursor: pointer; list-style: none;
+            padding: 9px 14px; display: flex; align-items: center; gap: 12px;
+            font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text); border-radius: 10px;
+            transition: background .2s ease;
+        }
+        .cctv-intel-collapse > summary::-webkit-details-marker { display: none; }
+        .cctv-intel-collapse > summary::before {
+            content: "▾"; font-size: 13px; color: var(--accent);
+            transition: transform .2s ease;
+            transform: rotate(0deg);
+        }
+        .cctv-intel-collapse:not([open]) > summary::before { transform: rotate(-90deg); }
+        .cctv-intel-collapse > summary:hover { background: rgba(79,195,247,.04); }
+        .cctv-intel-collapse .intel-summary-label {
+            font-weight: 800; color: var(--accent);
+        }
+        .cctv-intel-collapse .intel-summary-hint {
+            font-size: 10.5px; letter-spacing: .3px; text-transform: none;
+            color: var(--muted); font-weight: 400;
+        }
+        .cctv-intel-collapse[open] > summary { border-bottom: 1px dashed var(--border); border-radius: 10px 10px 0 0; }
+        .cctv-intel-collapse[open] .cctv-intel-grid { padding: 12px; }
 
-        #cctv-feed { max-height: 320px; overflow: auto; padding-right: 4px; }
+        .cctv-section-divider {
+            display: flex; align-items: center; gap: 10px;
+            margin: 16px 0 10px;
+            color: var(--muted);
+            font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase;
+        }
+        .cctv-section-divider::before,
+        .cctv-section-divider::after {
+            content: ""; flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+        }
+        .cctv-section-divider .divider-label {
+            font-weight: 700; color: var(--text);
+            padding: 0 6px;
+        }
+
+        .cctv-intel-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+            margin-top: 8px;
+        }
+        @media (max-width: 900px) { .cctv-intel-grid { grid-template-columns: 1fr; } }
+        .intel-block {
+            background: #0a0f15; border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px;
+        }
+        .intel-title {
+            font-size: 12px; font-weight: 800; letter-spacing: 1px;
+            text-transform: uppercase; color: var(--text);
+        }
+        .intel-sub {
+            font-size: 10.5px; color: var(--muted);
+            margin-bottom: 10px; margin-top: 2px;
+        }
+        .intel-list { list-style: none; margin: 0; padding: 0; }
+        .intel-list li {
+            display: grid; grid-template-columns: 1fr auto auto; gap: 10px;
+            align-items: center;
+            padding: 7px 8px; border-radius: 6px;
+            border-bottom: 1px dashed var(--border);
+            font-size: 12.5px;
+        }
+        .intel-list li:last-child { border-bottom: none; }
+        .intel-list .sig-name { color: var(--text); font-weight: 600; }
+        .intel-list .sig-pts {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 11.5px; font-weight: 700; color: var(--accent);
+            background: rgba(79,195,247,.10); border: 1px solid rgba(79,195,247,.4);
+            padding: 2px 7px; border-radius: 4px;
+        }
+        .intel-list .sig-count {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px; font-weight: 800; color: var(--text);
+            min-width: 28px; text-align: right;
+        }
+        .intel-list .sig-meta {
+            font-size: 11px; color: var(--muted);
+            text-transform: uppercase; letter-spacing: .4px;
+        }
+        .intel-list .sev-row.sev-watch   .sig-name { color: #4fc3f7; }
+        .intel-list .sev-row.sev-suspect .sig-name { color: #f59e0b; }
+        .intel-list .sev-row.sev-alert   .sig-name { color: #ef4444; }
+        .intel-list .sev-row.sev-watch   .sig-pts  { color: #4fc3f7; background: rgba(79,195,247,.10);  border-color: rgba(79,195,247,.4); }
+        .intel-list .sev-row.sev-suspect .sig-pts  { color: #f59e0b; background: rgba(245,158,11,.10);  border-color: rgba(245,158,11,.4); }
+        .intel-list .sev-row.sev-alert   .sig-pts  { color: #ef4444; background: rgba(239,68,68,.10);   border-color: rgba(239,68,68,.4); }
+        .intel-list .verdict-row.v-tp   .sig-name { color: #22c55e; }
+        .intel-list .verdict-row.v-fp   .sig-name { color: #94a3b8; }
+        .intel-list .verdict-row.v-gray .sig-name { color: #f59e0b; }
+
+        .cctv-card h2 .cctv-badges .live      { color: #ef4444; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.45); }
+        .cctv-card h2 .cctv-badges .total     { color: #4fc3f7; background: rgba(79,195,247,.12); border: 1px solid rgba(79,195,247,.45); }
+        .cctv-card h2 .cctv-badges .confirmed { color: #22c55e; background: rgba(34,197,94,.12);  border: 1px solid rgba(34,197,94,.45); }
+        .cctv-card h2 .cctv-badges .falsepos  { color: #94a3b8; background: rgba(148,163,184,.10); border: 1px solid rgba(148,163,184,.35); }
+        .cctv-card h2 .cctv-badges .cctv-reset {
+            margin-left: 6px; padding: 2px 8px; border-radius: 999px;
+            font-size: 12px; cursor: pointer;
+            background: transparent; color: var(--muted);
+            border: 1px solid var(--border);
+        }
+        .cctv-card h2 .cctv-badges .cctv-reset:hover { color: var(--text); border-color: var(--accent); }
+
+        #cctv-feed { max-height: 360px; overflow: auto; padding-right: 4px; }
         .cctv-item {
             position: relative;
-            display: grid; grid-template-columns: 80px 1fr 60px 60px; gap: 12px;
+            display: grid; grid-template-columns: 80px 1fr 60px 50px auto; gap: 10px;
             align-items: center;
             padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
             margin-bottom: 8px;
@@ -310,70 +421,190 @@
             20%  { transform: translateX(0);     opacity: 1; box-shadow: 0 0 0 6px rgba(239,68,68,.35); }
             100% {                                          box-shadow: 0 0 0 0 rgba(239,68,68,0); }
         }
-        .cctv-empty {
-            padding: 16px;
-            color: var(--muted);
-            text-align: center;
-            font-size: 13px;
-            font-style: italic;
-            background: #0c1117;
-            border: 1px dashed var(--border);
-            border-radius: 10px;
+        .cctv-item.sev-watch   { border-left: 4px solid #4fc3f7; }
+        .cctv-item.sev-suspect { border-left: 4px solid #f59e0b; }
+        .cctv-item.sev-alert   { border-left: 4px solid #ef4444; }
+        .cctv-item .zone-pill.sev-watch   { background: rgba(79,195,247,.10); color: #4fc3f7; border-color: rgba(79,195,247,.4); }
+        .cctv-item .zone-pill.sev-suspect { background: rgba(245,158,11,.10); color: #f59e0b; border-color: rgba(245,158,11,.4); }
+        .cctv-item .zone-pill.sev-alert   { background: rgba(239,68,68,.10); color: #ef4444; border-color: rgba(239,68,68,.4); }
+        .cctv-item.sev-alert .score   { color: #ef4444; }
+        .cctv-item.sev-suspect .score { color: #f59e0b; }
+        .cctv-item.sev-watch .score   { color: #4fc3f7; }
+
+        .cctv-item .track-id {
+            display: inline-block; margin-left: 8px; margin-right: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px; font-weight: 700; color: var(--text);
+            letter-spacing: .3px;
         }
-        .cctv-empty::before {
-            content: ""; display: inline-block;
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #22c55e; margin-right: 8px;
-            box-shadow: 0 0 8px rgba(34,197,94,.7);
-            vertical-align: middle;
-            animation: hb 1.6s ease-in-out infinite;
-        }</style>
+        .cctv-item .count-pill + .note { margin-left: 8px; }
+        .cctv-item .count-pill {
+            display: inline-block; margin-left: 6px;
+            padding: 1px 7px; border-radius: 999px;
+            font-size: 11px; font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            background: rgba(255,255,255,.06);
+            border: 1px solid var(--border); color: var(--muted);
+        }
+        .cctv-item.sev-alert .count-pill   { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.45); color: #ef4444; }
+        .cctv-item.sev-suspect .count-pill { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.45); color: #f59e0b; }
+        .cctv-item.sev-watch .count-pill   { background: rgba(79,195,247,.12); border-color: rgba(79,195,247,.45); color: #4fc3f7; }
+
+        .cctv-feedback { display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; }
+        .cctv-feedback button {
+            cursor: pointer;
+            width: 26px; height: 26px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.04);
+            color: var(--muted);
+            font-size: 13px; line-height: 1;
+            transition: transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+        }
+        .cctv-feedback button:hover { transform: translateY(-1px); }
+        .cctv-feedback .btn-ok:hover { background: rgba(34,197,94,.18); color: #22c55e; border-color: rgba(34,197,94,.55); }
+        .cctv-feedback .btn-no:hover { background: rgba(148,163,184,.15); color: #cbd5e1; border-color: rgba(148,163,184,.55); }
+        .cctv-feedback .verdict-label.ok { color: #22c55e; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.4); }
+        .cctv-feedback .verdict-label.no { color: #94a3b8; background: rgba(148,163,184,.10); border: 1px solid rgba(148,163,184,.35); }
+        .cctv-feedback .verdict-label.auto { font-size: 9px; cursor: help; position: relative; }
+        .cctv-feedback .verdict-label.auto::before { content: "🤖"; margin-right: 3px; font-size: 10px; }
+        .cctv-item.auto-verdict { border-style: dashed; }
+        .cctv-item.auto-verdict.reviewed-tp { background: rgba(34,197,94,.025); }
+        .cctv-item.auto-verdict.reviewed-fp { opacity: .60; }
+        .cctv-item .count-pill {
+            display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+            font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums;
+            background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--muted);
+        }
+        .cctv-item.sev-alert .count-pill   { background: rgba(239,68,68,.12);  border-color: rgba(239,68,68,.45);  color: #ef4444; }
+        .cctv-item.sev-suspect .count-pill { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.45); color: #f59e0b; }
+        .cctv-item.sev-watch .count-pill   { background: rgba(79,195,247,.12); border-color: rgba(79,195,247,.45); color: #4fc3f7; }
+        .cctv-item .track-id {
+            display: inline-block; margin-left: 8px; margin-right: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: .3px;
+        }
+        .cctv-item .count-pill + .note { margin-left: 8px; }
+        .cctv-item.reviewed-fp { opacity: .45; background: rgba(148,163,184,.05); }
+        .cctv-item.reviewed-fp .note { text-decoration: line-through; }
+        .cctv-item.reviewed-tp { border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.04); }
+        .cctv-item.reviewed-tp::before {
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,.5);
+        }
+
+        .cctv-fused { background: linear-gradient(170deg, #0d1219 0%, #0e151c 100%); }
+        .cctv-intel-collapse {
+            margin-top: 6px; margin-bottom: 4px;
+            border: 1px solid var(--border); border-radius: 10px;
+            background: rgba(255,255,255,.012);
+        }
+        .cctv-intel-collapse > summary {
+            cursor: pointer; list-style: none;
+            padding: 9px 14px; display: flex; align-items: center; gap: 12px;
+            font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text); border-radius: 10px;
+        }
+        .cctv-intel-collapse > summary::-webkit-details-marker { display: none; }
+        .cctv-intel-collapse > summary::before {
+            content: "▾"; font-size: 13px; color: var(--accent);
+            transition: transform .2s ease; transform: rotate(0deg);
+        }
+        .cctv-intel-collapse:not([open]) > summary::before { transform: rotate(-90deg); }
+        .cctv-intel-collapse > summary:hover { background: rgba(79,195,247,.04); }
+        .cctv-intel-collapse .intel-summary-label { font-weight: 800; color: var(--accent); }
+        .cctv-intel-collapse .intel-summary-hint  { font-size: 10.5px; letter-spacing: .3px; text-transform: none; color: var(--muted); font-weight: 400; }
+        .cctv-intel-collapse[open] > summary { border-bottom: 1px dashed var(--border); border-radius: 10px 10px 0 0; }
+        .cctv-intel-collapse[open] .cctv-intel-grid { padding: 12px; }
+
+        .cctv-section-divider {
+            display: flex; align-items: center; gap: 10px; margin: 16px 0 10px;
+            color: var(--muted); font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase;
+        }
+        .cctv-section-divider::before, .cctv-section-divider::after {
+            content: ""; flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+        }
+        .cctv-section-divider .divider-label { font-weight: 700; color: var(--text); padding: 0 6px; }
+
+        .cctv-intel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px; }
+        @media (max-width: 900px) { .cctv-intel-grid { grid-template-columns: 1fr; } }
+        .intel-block { background: #0a0f15; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+        .intel-title { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text); }
+        .intel-sub   { font-size: 10.5px; color: var(--muted); margin-bottom: 10px; margin-top: 2px; }
+        .intel-list  { list-style: none; margin: 0; padding: 0; }
+        .intel-list li {
+            display: grid; grid-template-columns: 1fr auto auto; gap: 10px;
+            align-items: center; padding: 7px 8px; border-radius: 6px;
+            border-bottom: 1px dashed var(--border); font-size: 12.5px;
+        }
+        .intel-list li:last-child { border-bottom: none; }
+        .intel-list .sig-name { color: var(--text); font-weight: 600; }
+        .intel-list .sig-pts {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 11.5px; font-weight: 700; color: var(--accent);
+            background: rgba(79,195,247,.10); border: 1px solid rgba(79,195,247,.4);
+            padding: 2px 7px; border-radius: 4px;
+        }
+        .intel-list .sig-count {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px; font-weight: 800; color: var(--text);
+            min-width: 28px; text-align: right;
+        }
+        .intel-list .sig-meta { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+        .intel-list .sev-row.sev-watch   .sig-name { color: #4fc3f7; }
+        .intel-list .sev-row.sev-suspect .sig-name { color: #f59e0b; }
+        .intel-list .sev-row.sev-alert   .sig-name { color: #ef4444; }
+        .intel-list .sev-row.sev-watch   .sig-pts  { color: #4fc3f7; background: rgba(79,195,247,.10);  border-color: rgba(79,195,247,.4); }
+        .intel-list .sev-row.sev-suspect .sig-pts  { color: #f59e0b; background: rgba(245,158,11,.10);  border-color: rgba(245,158,11,.4); }
+        .intel-list .sev-row.sev-alert   .sig-pts  { color: #ef4444; background: rgba(239,68,68,.10);   border-color: rgba(239,68,68,.4); }
+        .intel-list .verdict-row.v-tp   .sig-name { color: #22c55e; }
+        .intel-list .verdict-row.v-fp   .sig-name { color: #94a3b8; }
+        .intel-list .verdict-row.v-gray .sig-name { color: #f59e0b; }
+
+        .scroll-wrap {
+            max-height: 360px; overflow-y: auto; overflow-x: hidden;
+            margin-top: 6px;
+            border: 1px solid rgba(255,255,255,.03); border-radius: 8px;
+        }
+        .scroll-wrap table { width: 100%; }
+        .scroll-wrap thead th {
+            position: sticky; top: 0; background: var(--panel); z-index: 2;
+            box-shadow: 0 1px 0 var(--border);
+        }
+        .scroll-wrap::-webkit-scrollbar          { width: 9px; }
+        .scroll-wrap::-webkit-scrollbar-track    { background: transparent; }
+        .scroll-wrap::-webkit-scrollbar-thumb    { background: rgba(255,255,255,.10); border-radius: 8px; }
+        .scroll-wrap::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); }
+        .scroll-wrap.compact { max-height: 260px; }
+        #cctv-feed { max-height: 360px; overflow: auto; padding-right: 4px; }
+    </style>
 </head>
 <body>
     <header class="topbar">
         <div class="brand">
             <span class="logo">SSMS</span>
-            <span class="subtitle">Smart Store Management System</span>
+            <span class="title">Smart Store Management System</span>
         </div>
-        <div class="status">
+        <div class="status-bar">
             <span id="security-status" class="badge ok">SECURITY: OK</span>
             <span id="db-backend" class="badge muted">DB: ...</span>
-            <span id="last-update" class="muted">—</span>
+            <span id="last-update" class="muted">updated --:--:--</span>
         </div>
     </header>
 
     <main>
         <section class="grid kpi-grid">
-            <div class="card">
-                <span class="label">Total Revenue</span>
-                <span id="kpi-revenue" class="value">€0.00</span>
-                <span class="hint" id="kpi-sales">0 sales</span>
-            </div>
-            <div class="card warning">
-                <span class="label">Expired Products</span>
-                <span id="kpi-expired" class="value">0</span>
-                <span class="hint" id="kpi-near">0 near-expiry</span>
-            </div>
-            <div class="card warning">
-                <span class="label">Low Stock</span>
-                <span id="kpi-lowstock" class="value">0</span>
-                <span class="hint">items below threshold</span>
-            </div>
-            <div class="card">
-                <span class="label">Web Orders</span>
-                <span id="kpi-orders" class="value">0</span>
-                <span class="hint" id="kpi-web-revenue">€0.00</span>
-            </div>
-            <div class="card critical">
-                <span class="label">Anomalies</span>
-                <span id="kpi-anomalies" class="value">0</span>
-                <span class="hint" id="kpi-open-alerts">0 open alerts</span>
-            </div>
+            <div class="card"><span class="label">Total Revenue</span><span id="kpi-revenue" class="value">€0.00</span><span class="hint" id="kpi-sales">0 sales</span></div>
+            <div class="card warning"><span class="label">Expired Products</span><span id="kpi-expired" class="value">0</span><span class="hint" id="kpi-near">0 near-expiry</span></div>
+            <div class="card warning"><span class="label">Low Stock</span><span id="kpi-lowstock" class="value">0</span><span class="hint">items below threshold</span></div>
+            <div class="card"><span class="label">Web Orders</span><span id="kpi-orders" class="value">0</span><span class="hint" id="kpi-web-revenue">€0.00</span></div>
+            <div class="card critical"><span class="label">Anomalies</span><span id="kpi-anomalies" class="value">0</span><span class="hint" id="kpi-open-alerts">0 open alerts</span></div>
         </section>
 
         <section class="card auth">
             <h2>Authentication</h2>
-            <p class="hint">Default seeded users: <code>admin / admin123</code> &nbsp; · &nbsp; <code>employee / employee123</code></p>
+            <p class="hint">Default seeded users: <code>admin / admin123</code> &nbsp; - &nbsp; <code>employee / employee123</code></p>
             <div class="row">
                 <input id="auth-username" placeholder="Username" value="admin" />
                 <input id="auth-password" type="password" placeholder="Password" value="admin123" />
@@ -390,86 +621,106 @@
                     <span class="info" id="soc-count-info">0</span>
                 </span>
             </h2>
-            <table id="soc-events">
-                <thead><tr><th>Time</th><th>Category</th><th>Severity</th><th>Message</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <div class="scroll-wrap">
+                <table id="soc-events">
+                    <thead><tr><th>Time</th><th>Category</th><th>Severity</th><th>Message</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </section>
 
-        <section class="card cctv-card">
-            <h2>Live CCTV Alerts <span class="hint" style="margin-left:8px;">YOLOv8 intrusion feed · updates every 5s</span>
+        <section class="card cctv-card cctv-fused">
+            <h2>CCTV Intelligence Center <span class="hint" style="margin-left:8px;">YOLOv8 + ByteTrack - CCTV x inventory cross-correlation - refresh 5s</span>
                 <span class="cctv-badges">
                     <span class="live"  id="cctv-count-live"  title="Intrusions in the last 60s">0</span>
                     <span class="total" id="cctv-count-total" title="Total intrusions tracked">0</span>
+                    <span class="confirmed" id="cctv-count-confirmed" title="Confirmed true positives">OK 0</span>
+                    <span class="falsepos"  id="cctv-count-falsepos"  title="Marked as false positives">NO 0</span>
+                    <button type="button" id="cctv-reset-review" class="cctv-reset" title="Clear all review marks">↺</button>
                 </span>
             </h2>
+
+            <details class="cctv-intel-collapse" open>
+                <summary>
+                    <span class="intel-summary-label">Detection logic</span>
+                    <span class="intel-summary-hint">how the system decides who's suspicious - click to fold</span>
+                </summary>
+                <div class="cctv-intel-grid">
+                    <div class="intel-block">
+                        <div class="intel-title">Behavioural signals</div>
+                        <div class="intel-sub">additive score - decay 2.5 / s</div>
+                        <ul class="intel-list">
+                            <li><span class="sig-name">Loitering (critical zone)</span><span class="sig-pts">+30</span><span class="sig-count" id="sig-count-loitering">0</span></li>
+                            <li><span class="sig-name">Crouching / concealment</span><span class="sig-pts">+35</span><span class="sig-count" id="sig-count-crouch">0</span></li>
+                            <li><span class="sig-name">Hand to pocket</span><span class="sig-pts">+40</span><span class="sig-count" id="sig-count-hand">0</span></li>
+                            <li><span class="sig-name">Fast exit (post-event)</span><span class="sig-pts">+25</span><span class="sig-count" id="sig-count-fastexit">0</span></li>
+                        </ul>
+                    </div>
+                    <div class="intel-block">
+                        <div class="intel-title">Severity levels</div>
+                        <div class="intel-sub">cumulative score thresholds</div>
+                        <ul class="intel-list">
+                            <li class="sev-row sev-watch"><span class="sig-name">WATCH</span><span class="sig-pts">30 - 59</span><span class="sig-meta">monitor</span></li>
+                            <li class="sev-row sev-suspect"><span class="sig-name">SUSPECT</span><span class="sig-pts">60 - 79</span><span class="sig-meta">investigate</span></li>
+                            <li class="sev-row sev-alert"><span class="sig-name">ALERT</span><span class="sig-pts">80 +</span><span class="sig-meta">intervene + snapshot</span></li>
+                        </ul>
+                    </div>
+                    <div class="intel-block">
+                        <div class="intel-title">Auto verdict logic</div>
+                        <div class="intel-sub">CCTV x inventory cross-correlation</div>
+                        <ul class="intel-list">
+                            <li class="verdict-row v-tp"><span class="sig-name">AUTO ✓ TRUE</span><span class="sig-meta">alert + stock loss in [T,T+5min]</span></li>
+                            <li class="verdict-row v-fp"><span class="sig-name">AUTO ✗ FALSE</span><span class="sig-meta">alert without inventory impact</span></li>
+                            <li class="verdict-row v-gray"><span class="sig-name">GREY ZONE</span><span class="sig-meta">SUSPECT/ALERT undetermined - human</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+
+            <div class="cctv-section-divider"><span class="divider-label">Live alerts feed</span></div>
             <div id="cctv-feed"></div>
         </section>
 
         <section class="two-col">
             <div class="card">
                 <h2>Latest Web Orders</h2>
-                <table id="orders-table">
-                    <thead><tr><th>ID</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div class="scroll-wrap compact">
+                    <table id="orders-table">
+                        <thead><tr><th>ID</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
-
             <div class="card">
-                <h2>Stock — Expired & Near-expiry</h2>
-                <table id="stock-table">
-                    <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Days</th><th>Flag</th></tr></thead>
+                <h2>Stock - Expired &amp; Near-expiry</h2>
+                <div class="scroll-wrap compact">
+                    <table id="stock-table">
+                        <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Days</th><th>Flag</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Inventory Activity Log <span class="hint" style="margin-left:8px;">stock movements - every 5s</span></h2>
+            <div class="scroll-wrap">
+                <table id="activity-table">
+                    <thead><tr><th>Time</th><th>Product</th><th>Action</th><th>Qty after</th><th>By</th><th>Barcode</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
         </section>
 
-        <section class="card">
-            <h2><span class="heartbeat"></span>Live Sales Pulse <span class="hint" style="margin-left:8px;">updates every 3s</span></h2>
-            <div class="live-row">
-                <div class="live-card" id="live-card-min">
-                    <span class="lbl">Sales last minute</span>
-                    <span id="rt-last-min" class="val">0</span>
-                    <span class="delta-pop" id="delta-min"></span>
-                </div>
-                <div class="live-card" id="live-card-hour">
-                    <span class="lbl">Sales last hour</span>
-                    <span id="rt-last-hour" class="val">0</span>
-                    <span class="delta-pop" id="delta-hour"></span>
-                </div>
-                <div class="live-card" id="live-card-rev">
-                    <span class="lbl">Revenue last hour</span>
-                    <span id="rt-rev-hour" class="val">€0.00</span>
-                    <span class="delta-pop" id="delta-rev"></span>
-                </div>
-                <div class="live-card" id="live-card-rate">
-                    <span class="lbl">Scans / minute</span>
-                    <span id="rt-rate" class="val">0</span>
-                    <span class="delta-pop" id="delta-rate"></span>
-                </div>
-            </div>
-            <div id="live-feed" class="feed"></div>
-        </section>
-
-        <section class="card">
-            <h2>Recent Inventory Activity <span class="hint" style="margin-left:8px;">live · updates every 5s</span></h2>
-            <table id="activity-table">
-                <thead><tr><th>Time</th><th>Product</th><th>Action</th><th>Qty after</th><th>By</th><th>Barcode</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </section>
-
-        <section class="card">
-            <h2>Promotion Intelligence <span class="hint" style="margin-left:8px;">retail optimization</span></h2>
-
+        <section class="card promotions-card">
+            <h2>Promotions intelligence <span class="hint" style="margin-left:8px;">discounts + bundles - every 15s</span></h2>
             <div class="promo-section">
                 <div class="promo-section-header">
-                    <span class="promo-section-title">Near-expiry discounts</span>
+                    <span class="promo-section-title">Suggested discounts</span>
                     <span id="promo-count-discounts" class="promo-count-pill">0</span>
                 </div>
                 <div id="promo-discounts" class="promo-grid"></div>
             </div>
-
             <div class="promo-section">
                 <div class="promo-section-header">
                     <span class="promo-section-title">Bundle recommendations</span>
@@ -481,7 +732,7 @@
     </main>
 
     <footer class="muted">
-        SSMS v1.0 · auto-refresh every 15s · <a href="/docs" target="_blank">API docs</a>
+        SSMS v1.0 - auto-refresh every 15s - <a href="/docs" target="_blank">API docs</a>
     </footer>
 
     <script src="/static/app.js"></script>

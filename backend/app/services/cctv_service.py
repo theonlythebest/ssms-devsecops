@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.cctv import CCTVEvent
+from app.models.inventory_log import InventoryLog
 from app.schemas.cctv import CCTVEventCreate, LayoutSuggestion, ZoneStat
 from app.utils.logger import logger, persist_alert
 
@@ -120,3 +121,73 @@ def get_event(db: Session, event_id: int) -> CCTVEvent:
     if not e:
         raise HTTPException(status_code=404, detail="CCTV event not found")
     return e
+
+def auto_verdict_recent(db: Session, limit: int = 80) -> dict:
+    """Cross-correlate CCTV events with inventory_log to auto-classify alerts.
+
+    For each recent CCTV event we open a [event.ts - 30s, event.ts + 5min]
+    window in the inventory log. Two independent signals decide the verdict:
+
+    * Stock loss adjustment (action='adjust' with negative quantity_change)
+      not explainable by a normal sale -> strong theft confirmation -> AUTO TP.
+    * No inventory movement at all in the window -> nothing happened -> AUTO FP.
+    * Score critical (>=80) but no stock impact yet -> ambiguous, left to human.
+
+    Returns: { event_id: {verdict, confidence, reason} }
+    """
+    events = (
+        db.query(CCTVEvent)
+        .order_by(CCTVEvent.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    out: dict = {}
+
+    for e in events:
+        win_start = e.timestamp - timedelta(seconds=30)
+        win_end   = e.timestamp + timedelta(minutes=5)
+
+        logs = (
+            db.query(InventoryLog)
+            .filter(InventoryLog.timestamp >= win_start)
+            .filter(InventoryLog.timestamp <= win_end)
+            .all()
+        )
+
+        unexplained = [l for l in logs if l.action == "adjust" and l.quantity_change < 0]
+        sells       = [l for l in logs if l.action == "sell"]
+        any_move    = bool(logs)
+
+        if unexplained:
+            total_lost = sum(-l.quantity_change for l in unexplained)
+            out[e.id] = {
+                "verdict": "tp",
+                "confidence": round(min(0.95, 0.70 + 0.05 * total_lost), 2),
+                "reason": f"Stock loss detected: {total_lost} unit(s) adjusted in window",
+            }
+            continue
+
+        score = e.activity_score or 0
+        if score >= 80:
+            out[e.id] = {
+                "verdict": "unknown",
+                "confidence": 0.30,
+                "reason": "Critical score but no stock loss yet -- needs review",
+            }
+        elif score >= 60:
+            out[e.id] = {
+                "verdict": "unknown",
+                "confidence": 0.40,
+                "reason": "Suspect-level score with no inventory correlation -- manual check",
+            }
+        elif score >= 30:
+            note = "No stock impact in window"
+            if sells:
+                note += f" ({len(sells)} normal sale(s) only)"
+            out[e.id] = {
+                "verdict": "fp",
+                "confidence": 0.70 if any_move else 0.85,
+                "reason": note,
+            }
+
+    return out

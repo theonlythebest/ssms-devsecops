@@ -54,7 +54,7 @@ class Settings:
     )
 
     REQUEST_BURST_THRESHOLD: int = int(
-        os.getenv("REQUEST_BURST_THRESHOLD", "120")
+        os.getenv("REQUEST_BURST_THRESHOLD", "400")
     )
 
 settings = Settings()

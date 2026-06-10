@@ -3,10 +3,21 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SSMS Market — Click & Collect</title>
+    <title>SSMS Market — Click &amp; Collect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="/static/shop.css" />
 </head>
 <body>
+    <div class="promo-bar">
+        <div class="promo-bar-inner">
+            <span>🚚 Click &amp; Collect en 2h</span>
+            <span>🌱 Producteurs locaux</span>
+            <span>✓ Frais garantis ou remboursés</span>
+        </div>
+    </div>
+
     <header class="nav">
         <div class="nav-inner">
             <a class="brand" href="/shop" aria-label="SSMS Market">
@@ -15,7 +26,7 @@
             </a>
             <div class="search-bar">
                 <span class="search-icon">⌕</span>
-                <input id="search" type="search" placeholder="Rechercher des produits, fruits, viandes…" autocomplete="off" />
+                <input id="search" type="search" placeholder="Rechercher fruits, viandes, boissons…" autocomplete="off" />
             </div>
             <div class="nav-actions">
                 <button class="nav-cart" id="open-cart" aria-label="Ouvrir le panier">
@@ -29,12 +40,44 @@
     <main>
         <section class="hero">
             <div class="hero-text">
-                <h1>Les saveurs du <span class="hero-accent">monde</span> chez vous</h1>
-                <p>Préparez votre panier en ligne, payez, puis venez le récupérer en magasin sans attendre. Click & Collect intelligent.</p>
-                <button class="btn-primary" id="hero-shop-now">Acheter maintenant</button>
+                <span class="hero-eyebrow">🌿 Édition de saison</span>
+                <h1>Les saveurs du <span class="hero-accent">monde</span> à portée de clic</h1>
+                <p>Composez votre panier en ligne, payez en deux clics, puis récupérez-le frais en magasin. Sans file d'attente, sans surprise.</p>
+                <button class="btn-primary" id="hero-shop-now">Commencer mes courses →</button>
             </div>
             <div class="hero-illustration" aria-hidden="true">
                 <div class="hero-bg"></div>
+            </div>
+        </section>
+
+        <section class="trust-strip" aria-label="Nos engagements">
+            <div class="trust-item">
+                <div class="trust-icon">⚡</div>
+                <div class="trust-text">
+                    <strong>Prêt en 2h</strong>
+                    <span>Click &amp; Collect express</span>
+                </div>
+            </div>
+            <div class="trust-item">
+                <div class="trust-icon">🌱</div>
+                <div class="trust-text">
+                    <strong>Frais &amp; local</strong>
+                    <span>Producteurs sélectionnés</span>
+                </div>
+            </div>
+            <div class="trust-item">
+                <div class="trust-icon">🔒</div>
+                <div class="trust-text">
+                    <strong>Paiement sécurisé</strong>
+                    <span>3D Secure inclus</span>
+                </div>
+            </div>
+            <div class="trust-item">
+                <div class="trust-icon">↩️</div>
+                <div class="trust-text">
+                    <strong>Satisfait ou remboursé</strong>
+                    <span>Garantie 14 jours</span>
+                </div>
             </div>
         </section>
 
@@ -54,10 +97,6 @@
         </section>
     </main>
 
-    <footer class="site-footer">
-        <span>SSMS Market · Smart Click &amp; Collect</span>
-        <span><a href="/" class="footer-link">Tableau de bord admin</a></span>
-    </footer>
 
     <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
         <div class="cart-overlay" id="cart-overlay"></div>

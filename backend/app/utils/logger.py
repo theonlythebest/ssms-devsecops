@@ -86,7 +86,7 @@ class SecurityMonitor:
 
         if request_rate > settings.REQUEST_BURST_THRESHOLD:
             triggered_vectors.add("api_flood")
-            if self.can_alert("api_flood", cooldown=60):
+            if self.can_alert("api_flood", cooldown=300):
                 anomalies.append({
                     "category": "security",
                     "severity": "warning",

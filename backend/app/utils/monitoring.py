@@ -207,6 +207,8 @@ QUARANTINE_WHITELIST = {
     "/security/status",
     "/security/quarantine/release",
     "/health",
+    "/cctv/events",
+    "/auth/login",
 }
 
 class MonitoringMiddleware(BaseHTTPMiddleware):
