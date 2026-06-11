@@ -1,1 +1,14 @@
+# SSMS — Trivy ignore list
+#
+# Each entry must be justified and reviewed in PR.
+# Format: <CVE-ID>    # context — owner — review-by-date
 
+# Alpine 3.21 / OpenSSL libcrypto3 — heap buffer overflow on 32-bit systems
+# Affects only 32-bit builds; our frontend nginx image runs amd64.
+# Risk impact = LOW for our deployment.
+# Owner: devsecops — review by next quarterly bump.
+CVE-2026-31789
+
+# Alpine 3.21 / libssl3 — same parent OpenSSL package; same justification.
+# Owner: devsecops — review by next quarterly bump.
+CVE-2026-31790
