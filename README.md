@@ -183,16 +183,8 @@ ansible-playbook playbook.yml  # configure tout
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Browser  ←→  FastAPI (8000)  ←→  MariaDB (3306)         │
-│                  ↑                                       │
-│         camera_worker.py  ─────→  POST /cctv/events      │
-│                                                          │
-│  Prometheus (9090)  ←scrape─  /metrics                   │
-│       ↓                                                  │
-│  Grafana (3000)  ─auto-provisioned dashboards            │
-└─────────────────────────────────────────────────────────┘
 
+<img width="1046" height="922" alt="image" src="https://github.com/user-attachments/assets/b00a3f5a-7db8-4a4a-aae6-618d5daa6abf"/>
 
 ---
 
