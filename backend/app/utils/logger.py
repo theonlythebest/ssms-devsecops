@@ -131,19 +131,41 @@ class SecurityMonitor:
                 "message": "Multi-vector attack pattern detected: " +
                            ", ".join(sorted(triggered_vectors)),
             })
+            if not self._quarantined:
+                self.trigger_quarantine("Multi-vector attack: " +
+                                        ", ".join(sorted(triggered_vectors)))
+                anomalies.append({
+                    "category": "security",
+                    "severity": "critical",
+                    "message": "Automatic containment activated (multi-vector pattern)",
+                })
+
+        if auth_fail_rate >= 7 and not self._quarantined and self.can_alert("auth_flood_quarantine", cooldown=180):
+            self.trigger_quarantine(f"Sustained brute-force: {auth_fail_rate} failures/min")
+            anomalies.append({
+                "category": "security",
+                "severity": "critical",
+                "message": "Automatic containment activated due to brute-force pattern",
+            })
 
         return anomalies
 
     def trigger_quarantine(self, reason: str) -> None:
+        from app.utils.monitoring import quarantine_state, quarantine_trigger_total
         with self._lock:
             self._quarantined = True
             self._quarantine_reason = reason
+        quarantine_state.set(1)
+        quarantine_trigger_total.inc()
         logger.critical("QUARANTINE TRIGGERED :: %s", reason)
 
     def release_quarantine(self) -> None:
+        from app.utils.monitoring import quarantine_state, quarantine_release_total
         with self._lock:
             self._quarantined = False
             self._quarantine_reason = None
+        quarantine_state.set(0)
+        quarantine_release_total.inc()
         logger.warning("Quarantine released.")
 
     @property
@@ -173,7 +195,20 @@ security_monitor = SecurityMonitor()
 
 def persist_alert(db, category: str, severity: str, message: str) -> None:
     from app.models.alert import Alert
+    from app.utils.monitoring import (
+        soc_alerts_total, critical_soc_alerts_total,
+        auth_flood_alerts_total, quarantine_trigger_total,
+    )
     alert = Alert(category=category, severity=severity, message=message)
     db.add(alert)
     db.commit()
     logger.info("ALERT [%s/%s] %s", category, severity, message)
+
+    soc_alerts_total.labels(severity=severity).inc()
+    if severity == "critical":
+        critical_soc_alerts_total.inc()
+    msg_lower = (message or "").lower()
+    if "auth_flood" in msg_lower or "authentication failures" in msg_lower:
+        auth_flood_alerts_total.inc()
+    if "containment activated" in msg_lower or "quarantine activated" in msg_lower:
+        quarantine_trigger_total.inc()

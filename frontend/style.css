@@ -373,3 +373,308 @@ main > *:nth-child(8) { animation-delay: .35s; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted-2); }
+
+/* ============================================================
+   MILITARY SOC OVERRIDE - tactical look
+   ============================================================ */
+
+:root {
+    --text: #f0f6fc;
+    --text-soft: #d7dee8;
+    --muted: #9aa5b4;
+    --accent: #5dd3ff;
+    --accent-2: #00c8ff;
+    --tactical-amber: #ffb000;
+    --tactical-red:   #ff3344;
+    --tactical-green: #00ff88;
+    --hud-line: rgba(93,211,255,.35);
+}
+
+body {
+    background:
+        repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(255,255,255,.005) 3px, transparent 4px),
+        radial-gradient(80% 50% at 0% 0%, rgba(93,211,255,.05), transparent 60%),
+        radial-gradient(60% 40% at 100% 100%, rgba(255,176,0,.025), transparent 65%),
+        var(--bg);
+}
+
+.classification-bar {
+    position: sticky; top: 0; z-index: 1000;
+    height: 22px;
+    background: linear-gradient(90deg, #0f1923 0%, #1a2937 50%, #0f1923 100%);
+    border-bottom: 1px solid var(--hud-line);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--tactical-amber);
+    text-shadow: 0 0 6px rgba(255,176,0,.5);
+}
+.classification-bar .left,
+.classification-bar .right { display: inline-flex; gap: 18px; align-items: center; }
+.classification-bar .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--tactical-green);
+    box-shadow: 0 0 8px var(--tactical-green);
+    animation: hudPulse 2s ease-in-out infinite;
+}
+@keyframes hudPulse {
+    0%,100% { opacity: 1;    transform: scale(1); }
+    50%     { opacity: .55;  transform: scale(.85); }
+}
+
+header.topbar {
+    border-bottom: 1px solid var(--hud-line);
+    background: linear-gradient(180deg, rgba(93,211,255,.04), transparent);
+}
+
+.card {
+    border-radius: 6px !important;
+    border: 1px solid var(--border) !important;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%) !important;
+    position: relative;
+}
+.card::before,
+.card::after {
+    content: ""; position: absolute;
+    width: 14px; height: 14px;
+    border: 1px solid var(--hud-line);
+    pointer-events: none;
+    opacity: .9;
+}
+.card::before { top: -1px; left: -1px;  border-right: none; border-bottom: none; }
+.card::after  { bottom: -1px; right: -1px; border-left: none;  border-top: none;    }
+.card:hover { border-color: var(--accent) !important; }
+.card:hover::before, .card:hover::after { border-color: var(--accent); opacity: 1; }
+
+.card h2 {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace;
+    font-size: 13px !important; letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent) !important;
+    text-shadow: 0 0 8px rgba(93,211,255,.25);
+    border-bottom: 1px dashed var(--hud-line);
+    padding-bottom: 8px; margin-bottom: 10px;
+}
+.card h2 .hint {
+    font-size: 10px !important; letter-spacing: 1px;
+    color: var(--muted) !important;
+    text-shadow: none;
+}
+
+.value {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace;
+    font-weight: 700 !important;
+    text-shadow: 0 0 12px rgba(93,211,255,.18);
+}
+.label {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace;
+    font-size: 10px !important; letter-spacing: 2px !important;
+    color: var(--accent) !important;
+    opacity: .85;
+}
+
+button, #btn-login {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    padding: 9px 18px !important;
+    background: linear-gradient(180deg, rgba(93,211,255,.10), rgba(93,211,255,.04)) !important;
+    border: 1px solid var(--accent) !important;
+    color: var(--accent) !important;
+    border-radius: 4px !important;
+    cursor: pointer;
+    transition: all .2s ease;
+    text-shadow: 0 0 6px rgba(93,211,255,.6);
+    box-shadow: 0 0 0 0 rgba(93,211,255,0), inset 0 0 0 0 rgba(93,211,255,0);
+    position: relative;
+}
+button:hover, #btn-login:hover {
+    background: linear-gradient(180deg, rgba(93,211,255,.22), rgba(93,211,255,.08)) !important;
+    box-shadow: 0 0 16px rgba(93,211,255,.45),
+                inset 0 0 20px rgba(93,211,255,.10);
+    transform: translateY(-1px);
+    color: #fff !important;
+}
+button:active { transform: translateY(0); }
+
+.badge {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 10.5px !important;
+    padding: 4px 10px !important;
+    border-radius: 3px !important;
+    border-style: solid !important;
+}
+.badge.ok {
+    color: var(--tactical-green) !important;
+    border-color: var(--tactical-green) !important;
+    background: rgba(0,255,136,.10) !important;
+    box-shadow: 0 0 12px rgba(0,255,136,.25);
+    text-shadow: 0 0 6px rgba(0,255,136,.5);
+}
+.badge.crit {
+    color: var(--tactical-red) !important;
+    border-color: var(--tactical-red) !important;
+    background: rgba(255,51,68,.10) !important;
+    box-shadow: 0 0 12px rgba(255,51,68,.30);
+    text-shadow: 0 0 6px rgba(255,51,68,.5);
+    animation: hudPulse 1.5s ease-in-out infinite;
+}
+
+input[type="text"], input[type="password"], input:not([type]) {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace !important;
+    background: rgba(0,0,0,.35) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    border-radius: 3px !important;
+    padding: 9px 12px !important;
+    transition: border-color .2s ease, box-shadow .2s ease;
+    letter-spacing: 1px;
+}
+input:focus {
+    outline: none !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(93,211,255,.3) !important;
+}
+
+table th, table td { font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace; }
+table th {
+    color: var(--accent) !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+}
+table td { color: var(--text-soft) !important; font-size: 12px !important; }
+
+code {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace !important;
+    background: rgba(93,211,255,.08) !important;
+    border: 1px solid var(--accent) !important;
+    color: var(--accent) !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+    font-size: 11px !important;
+    letter-spacing: .3px;
+}
+
+.cctv-reset {
+    color: var(--tactical-amber) !important;
+    border-color: var(--tactical-amber) !important;
+    background: rgba(255,176,0,.05) !important;
+    text-shadow: 0 0 6px rgba(255,176,0,.5);
+}
+.cctv-reset:hover {
+    background: rgba(255,176,0,.15) !important;
+    box-shadow: 0 0 14px rgba(255,176,0,.45) !important;
+    color: #fff !important;
+}
+
+.cctv-feedback .btn-ok {
+    background: rgba(0,255,136,.06) !important;
+    border-color: rgba(0,255,136,.35) !important;
+    color: var(--tactical-green) !important;
+    text-shadow: 0 0 4px rgba(0,255,136,.4);
+}
+.cctv-feedback .btn-ok:hover {
+    background: rgba(0,255,136,.20) !important;
+    box-shadow: 0 0 12px rgba(0,255,136,.5) !important;
+}
+.cctv-feedback .btn-no {
+    background: rgba(255,51,68,.04) !important;
+    border-color: rgba(255,51,68,.35) !important;
+    color: var(--tactical-red) !important;
+    text-shadow: 0 0 4px rgba(255,51,68,.4);
+}
+.cctv-feedback .btn-no:hover {
+    background: rgba(255,51,68,.18) !important;
+    box-shadow: 0 0 12px rgba(255,51,68,.5) !important;
+}
+
+.kpi-grid .card { border-radius: 4px !important; }
+.kpi-grid .card .label::before {
+    content: "▸ ";
+    color: var(--accent);
+    opacity: .7;
+}
+
+footer {
+    border-top: 1px dashed var(--hud-line);
+    padding: 14px 0;
+    text-align: center;
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-shadow: 0 0 6px rgba(93,211,255,.6); }
+
+/* QUARANTINE BANNER - emergency tactical alert */
+.quarantine-banner {
+    position: sticky; top: 22px; z-index: 999;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    background: linear-gradient(90deg, rgba(255,51,68,.18) 0%, rgba(255,51,68,.32) 50%, rgba(255,51,68,.18) 100%);
+    border-top: 1px solid var(--tactical-red);
+    border-bottom: 1px solid var(--tactical-red);
+    padding: 12px 22px;
+    color: #fff;
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', SFMono-Regular, Menlo, monospace;
+    box-shadow: 0 0 28px rgba(255,51,68,.45), inset 0 0 40px rgba(255,51,68,.10);
+    animation: quarantineSweep 2.4s ease-in-out infinite;
+}
+@keyframes quarantineSweep {
+    0%, 100% { box-shadow: 0 0 28px rgba(255,51,68,.45), inset 0 0 40px rgba(255,51,68,.10); }
+    50%      { box-shadow: 0 0 42px rgba(255,51,68,.75), inset 0 0 60px rgba(255,51,68,.18); }
+}
+.quarantine-banner .qb-left  { display: inline-flex; align-items: center; gap: 12px; }
+.quarantine-banner .qb-right { display: inline-flex; align-items: center; gap: 14px; }
+.quarantine-banner .qb-pulse {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--tactical-red);
+    box-shadow: 0 0 12px var(--tactical-red);
+    animation: hudPulse 1s ease-in-out infinite;
+}
+.quarantine-banner .qb-label {
+    font-size: 13px; font-weight: 800; letter-spacing: 3px;
+    color: var(--tactical-red);
+    text-shadow: 0 0 10px rgba(255,51,68,.7);
+}
+.quarantine-banner .qb-reason {
+    font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffb0b8; opacity: .85;
+    padding-left: 12px; border-left: 1px solid rgba(255,51,68,.5);
+}
+.quarantine-banner .qb-help {
+    font-size: 10.5px; letter-spacing: .8px;
+    color: #ffd0d4; opacity: .8;
+}
+.quarantine-banner #qb-release-btn {
+    font-family: inherit;
+    font-size: 12px !important; font-weight: 800; letter-spacing: 2px;
+    padding: 8px 18px !important;
+    background: linear-gradient(180deg, rgba(255,51,68,.25), rgba(255,51,68,.08)) !important;
+    border: 1px solid var(--tactical-red) !important;
+    color: #fff !important;
+    border-radius: 3px !important;
+    cursor: pointer;
+    text-transform: uppercase;
+    text-shadow: 0 0 6px rgba(255,51,68,.6);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.quarantine-banner #qb-release-btn:hover {
+    background: linear-gradient(180deg, rgba(255,51,68,.45), rgba(255,51,68,.18)) !important;
+    box-shadow: 0 0 18px rgba(255,51,68,.7);
+    transform: translateY(-1px);
+}
+.quarantine-banner #qb-release-btn:disabled {
+    opacity: .5; cursor: wait;
+}

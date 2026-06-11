@@ -3,32 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SSMS Market — Click &amp; Collect</title>
+    <title>SSMS Market — Frais. Local. En 2h.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" />
     <link rel="stylesheet" href="/static/shop.css" />
 </head>
 <body>
     <div class="promo-bar">
         <div class="promo-bar-inner">
             <span>🚚 Click &amp; Collect en 2h</span>
-            <span>🌱 Producteurs locaux</span>
+            <span class="dot-sep">·</span>
+            <span>🌱 Producteurs locaux certifiés</span>
+            <span class="dot-sep">·</span>
             <span>✓ Frais garantis ou remboursés</span>
+            <span class="dot-sep">·</span>
+            <span>🎁 -10% dès 50€ avec le code <strong>FRESH10</strong></span>
         </div>
     </div>
 
-    <header class="nav">
+    <header class="nav" id="main-nav">
         <div class="nav-inner">
             <a class="brand" href="/shop" aria-label="SSMS Market">
                 <span class="brand-icon">🛒</span>
-                <span class="brand-name">SSMS Market</span>
+                <span class="brand-name">SSMS<span class="brand-name-accent">Market</span></span>
             </a>
             <div class="search-bar">
                 <span class="search-icon">⌕</span>
                 <input id="search" type="search" placeholder="Rechercher fruits, viandes, boissons…" autocomplete="off" />
+                <kbd class="search-kbd">⌘ K</kbd>
             </div>
             <div class="nav-actions">
+                <a class="nav-link" href="#categories">Catégories</a>
+                <a class="nav-link" href="#products">Produits</a>
                 <button class="nav-cart" id="open-cart" aria-label="Ouvrir le panier">
                     <span class="cart-icon">🛍️</span>
                     <span class="cart-badge hidden" id="cart-badge">0</span>
@@ -39,14 +46,46 @@
 
     <main>
         <section class="hero">
-            <div class="hero-text">
-                <span class="hero-eyebrow">🌿 Édition de saison</span>
-                <h1>Les saveurs du <span class="hero-accent">monde</span> à portée de clic</h1>
-                <p>Composez votre panier en ligne, payez en deux clics, puis récupérez-le frais en magasin. Sans file d'attente, sans surprise.</p>
-                <button class="btn-primary" id="hero-shop-now">Commencer mes courses →</button>
-            </div>
-            <div class="hero-illustration" aria-hidden="true">
-                <div class="hero-bg"></div>
+            <div class="hero-blob blob-1"></div>
+            <div class="hero-blob blob-2"></div>
+            <div class="hero-grid">
+                <div class="hero-text">
+                    <span class="hero-eyebrow">
+                        <span class="dot-live"></span>
+                        Édition de saison — Été 2026
+                    </span>
+                    <h1>
+                        Les saveurs du <span class="hero-accent">monde</span>
+                        <br/>à portée de <span class="hero-underline">clic</span>.
+                    </h1>
+                    <p>Composez votre panier en ligne, payez en deux clics, puis récupérez-le frais en magasin. <strong>Sans file d'attente, sans surprise.</strong></p>
+                    <div class="hero-cta-row">
+                        <button class="btn-primary btn-glow" id="hero-shop-now">Commencer mes courses →</button>
+                        <a class="btn-ghost" href="#categories">Voir les catégories</a>
+                    </div>
+                    <div class="hero-trust-row">
+                        <div class="hero-stars">★★★★★</div>
+                        <span><strong>4.9/5</strong> · 2 380 clients satisfaits ce mois-ci</span>
+                    </div>
+                </div>
+                <div class="hero-visual" aria-hidden="true">
+                    <div class="hero-card hero-card-1">
+                        <span class="hero-card-emoji">🍎</span>
+                        <span class="hero-card-label">Pommes Gala</span>
+                        <span class="hero-card-price">€0.40</span>
+                    </div>
+                    <div class="hero-card hero-card-2">
+                        <span class="hero-card-emoji">🥖</span>
+                        <span class="hero-card-label">Baguette tradition</span>
+                        <span class="hero-card-price">€1.20</span>
+                    </div>
+                    <div class="hero-card hero-card-3">
+                        <span class="hero-card-emoji">🍓</span>
+                        <span class="hero-card-label">Fraises de plein champ</span>
+                        <span class="hero-card-price">€2.90</span>
+                    </div>
+                    <div class="hero-orb"></div>
+                </div>
             </div>
         </section>
 
@@ -81,22 +120,145 @@
             </div>
         </section>
 
-        <section class="categories">
-            <h2>Nos catégories</h2>
+        <section class="stats-strip" aria-label="Chiffres clés">
+            <div class="stat-item">
+                <span class="stat-num">12K+</span>
+                <span class="stat-label">commandes livrées</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num">340</span>
+                <span class="stat-label">producteurs partenaires</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num">2h</span>
+                <span class="stat-label">délai moyen de retrait</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num">98%</span>
+                <span class="stat-label">de clients qui reviennent</span>
+            </div>
+        </section>
+
+        <section class="categories" id="categories">
+            <div class="section-header">
+                <span class="section-eyebrow">Explore</span>
+                <h2>Nos catégories</h2>
+                <p class="section-sub">Tout ce qu'il vous faut, soigneusement sélectionné par nos équipes.</p>
+            </div>
             <div class="category-grid" id="category-grid"></div>
         </section>
 
         <section class="products" id="products">
             <div class="products-header">
-                <h2 id="products-title">Tous les produits</h2>
+                <div>
+                    <span class="section-eyebrow">Catalogue</span>
+                    <h2 id="products-title">Tous les produits</h2>
+                </div>
                 <span class="products-meta" id="products-meta"></span>
             </div>
             <div class="product-grid" id="product-grid">
                 <div class="empty">Chargement des produits…</div>
             </div>
         </section>
+
+        <section class="testimonials" aria-label="Avis clients">
+            <div class="section-header">
+                <span class="section-eyebrow">Ils nous font confiance</span>
+                <h2>Ce qu'en pensent nos clients</h2>
+            </div>
+            <div class="testimonial-grid">
+                <article class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>« Service ultra rapide. J'ai commandé à 10h et tout était prêt à midi. Les produits étaient nickel, vraiment frais. »</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#fbbf24,#f97316)">SD</div>
+                        <div>
+                            <strong>Sophie D.</strong>
+                            <span>Cliente depuis 2024</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>« Je gagne au moins 1h par semaine. Les producteurs locaux affichés c'est top, je sais d'où vient ce que je mange. »</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#22c55e,#16a34a)">MK</div>
+                        <div>
+                            <strong>Marc K.</strong>
+                            <span>Cadre, Paris 11e</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>« La fraîcheur est garantie, j'ai été remboursée la fois où un produit n'allait pas. Service au top. »</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#ec4899,#be185d)">LR</div>
+                        <div>
+                            <strong>Léa R.</strong>
+                            <span>Mère de famille</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="newsletter">
+            <div class="newsletter-card">
+                <div class="newsletter-text">
+                    <span class="section-eyebrow">Restez informés</span>
+                    <h2>Recevez les promos & arrivages</h2>
+                    <p>Une newsletter par semaine. Sans spam. Désinscription en un clic.</p>
+                </div>
+                <form class="newsletter-form" id="newsletter-form" onsubmit="return false;">
+                    <input type="email" placeholder="votre@email.com" required />
+                    <button type="submit" class="btn-primary">S'inscrire</button>
+                </form>
+            </div>
+        </section>
     </main>
 
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-col footer-brand-col">
+                <a class="brand" href="/shop">
+                    <span class="brand-icon">🛒</span>
+                    <span class="brand-name">SSMS<span class="brand-name-accent">Market</span></span>
+                </a>
+                <p>Le frais à portée de clic. Click &amp; Collect en 2h depuis tous nos magasins.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="Instagram">📷</a>
+                    <a href="#" aria-label="Twitter">🐦</a>
+                    <a href="#" aria-label="Facebook">📘</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Boutique</h4>
+                <a href="#categories">Catégories</a>
+                <a href="#products">Tous les produits</a>
+                <a href="#">Nouveautés</a>
+                <a href="#">Promotions</a>
+            </div>
+            <div class="footer-col">
+                <h4>Aide</h4>
+                <a href="#">Comment ça marche</a>
+                <a href="#">Centre d'aide</a>
+                <a href="#">Nous contacter</a>
+                <a href="#">Retours &amp; remboursements</a>
+            </div>
+            <div class="footer-col">
+                <h4>Légal</h4>
+                <a href="#">CGV</a>
+                <a href="#">Politique de confidentialité</a>
+                <a href="#">Mentions légales</a>
+                <a href="#">Cookies</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 SSMS Market · Tous droits réservés</span>
+            <span>🇫🇷 Made with care in Paris</span>
+        </div>
+    </footer>
 
     <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
         <div class="cart-overlay" id="cart-overlay"></div>
@@ -132,5 +294,39 @@
     <div class="toast" id="toast" hidden></div>
 
     <script src="/static/shop.js"></script>
+    <script>
+        (function(){
+            var nav = document.getElementById("main-nav");
+            if (!nav) return;
+            function onScroll() {
+                if (window.scrollY > 8) nav.classList.add("scrolled");
+                else nav.classList.remove("scrolled");
+            }
+            window.addEventListener("scroll", onScroll, { passive: true });
+            onScroll();
+
+            var input = document.querySelector("#search");
+            window.addEventListener("keydown", function(e){
+                if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+                    e.preventDefault();
+                    if (input) input.focus();
+                }
+            });
+
+            var nf = document.getElementById("newsletter-form");
+            if (nf) {
+                nf.addEventListener("submit", function(e){
+                    e.preventDefault();
+                    var t = document.getElementById("toast");
+                    if (t) {
+                        t.textContent = "Merci ! Vous êtes inscrit à notre newsletter.";
+                        t.hidden = false;
+                        setTimeout(function(){ t.hidden = true; }, 2800);
+                    }
+                    nf.reset();
+                });
+            }
+        })();
+    </script>
 </body>
 </html>

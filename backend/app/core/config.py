@@ -46,7 +46,7 @@ class Settings:
     )
 
     WRITE_BURST_THRESHOLD: int = int(
-        os.getenv("WRITE_BURST_THRESHOLD", "30")
+        os.getenv("WRITE_BURST_THRESHOLD", "80")
     )
 
     AUTH_FAIL_THRESHOLD: int = int(

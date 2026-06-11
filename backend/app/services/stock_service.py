@@ -10,6 +10,10 @@ from app.models.stock import StockItem
 from app.schemas.stock import StockItemCreate, StockItemOut, StockItemUpdate, StockKPI
 from app.services import inventory_service, sales_service
 from app.utils.logger import logger, persist_alert
+from app.utils.monitoring import (
+    barcode_scans_total, barcode_sell_operations_total,
+    barcode_restock_operations_total, unknown_barcode_total,
+)
 
 NEAR_EXPIRY_DAYS = 5
 
@@ -100,9 +104,12 @@ def scan_product(db: Session, product_id: int, action: str = "sell",
             raise HTTPException(status_code=400, detail="Out of stock")
         product.quantity -= 1
         change = -1
+        barcode_sell_operations_total.inc()
     else:
         product.quantity += 1
         change = +1
+        barcode_restock_operations_total.inc()
+    barcode_scans_total.inc()
     db.commit(); db.refresh(product)
     inventory_service.record_log(db, product=product, action=action,
                                  quantity_change=change, username=username)
@@ -124,7 +131,7 @@ def scan_product(db: Session, product_id: int, action: str = "sell",
 def get_item_by_barcode(db: Session, barcode: str) -> StockItem:
     item = db.query(StockItem).filter(StockItem.barcode == barcode).first()
     if not item:
-                                                                           
+        unknown_barcode_total.inc()
         persist_alert(db, "barcode", "warning",
                       f"Unknown barcode scanned: '{barcode}'")
         raise HTTPException(status_code=404,

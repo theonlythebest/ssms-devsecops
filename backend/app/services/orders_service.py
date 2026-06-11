@@ -12,6 +12,7 @@ from app.models.order import WebOrder, WebOrderItem
 from app.models.stock import StockItem
 from app.schemas.order import WebAnalytics, WebOrderCreate
 from app.utils.logger import logger, persist_alert
+from app.utils.monitoring import orders_total, confirmed_orders_total, revenue_total
 
 def _new_public_id() -> str:
     return "WO-" + "".join(
@@ -73,6 +74,11 @@ def create_order(db: Session, payload: WebOrderCreate) -> WebOrder:
     logger.info(
         "Web order %s created: total=%.2f status=%s", order.public_id, order.total, order.status
     )
+
+    orders_total.inc()
+    if order.status == "confirmed":
+        confirmed_orders_total.inc()
+        revenue_total.inc(order.total)
     return order
 
 def list_orders(db: Session, limit: int = 100) -> list[WebOrder]:

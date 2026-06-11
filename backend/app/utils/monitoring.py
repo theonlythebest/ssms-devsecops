@@ -211,6 +211,14 @@ QUARANTINE_WHITELIST = {
     "/auth/login",
 }
 
+WRITE_COUNT_WHITELIST = {
+    "/orders/",
+    "/orders",
+    "/cctv/events",
+    "/auth/login",
+    "/health",
+}
+
 class MonitoringMiddleware(BaseHTTPMiddleware):
     """Counts requests, runs anomaly analysis, persists SOC events."""
 
@@ -235,7 +243,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
 
         security_monitor.record_event("request")
 
-        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"} and path not in WRITE_COUNT_WHITELIST:
             security_monitor.record_event("db_write")
 
         start = time.perf_counter()
@@ -328,3 +336,44 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
         response.headers["X-Process-Time-ms"] = f"{elapsed_ms:.2f}"
 
         return response
+
+cctv_events_total = Counter(
+    "cctv_events_total",
+    "Total CCTV events posted by camera worker",
+    ["severity", "zone"]
+)
+
+cctv_intrusions_total = Counter(
+    "cctv_intrusions_total",
+    "Total CCTV ALERT-level intrusion events (score >= 80)"
+)
+
+cctv_watch_total = Counter(
+    "cctv_watch_total",
+    "Total CCTV WATCH-level events (30 <= score < 60)"
+)
+
+cctv_suspect_total = Counter(
+    "cctv_suspect_total",
+    "Total CCTV SUSPECT-level events (60 <= score < 80)"
+)
+
+cctv_auto_tp_total = Counter(
+    "cctv_auto_tp_total",
+    "CCTV events auto-classified as TRUE positive (inventory loss correlated)"
+)
+
+cctv_auto_fp_total = Counter(
+    "cctv_auto_fp_total",
+    "CCTV events auto-classified as FALSE positive (no inventory impact)"
+)
+
+cctv_grey_zone_total = Counter(
+    "cctv_grey_zone_total",
+    "CCTV events left to human (SUSPECT/ALERT with no inventory correlation)"
+)
+
+active_tracks_gauge = Gauge(
+    "active_tracks_gauge",
+    "Number of unique people tracks currently active in CCTV feed"
+)

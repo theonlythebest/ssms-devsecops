@@ -12,6 +12,7 @@ from app.models.sale import Sale, SaleItem
 from app.models.stock import StockItem
 from app.schemas.sale import SaleCreate, SaleItemCreate, SaleKPI
 from app.utils.logger import logger, persist_alert
+from app.utils.monitoring import sales_total, revenue_total, refunds_total
 
 HIGH_VALUE_THRESHOLD = 500.0
 NIGHT_WINDOW = (0, 5)
@@ -65,6 +66,12 @@ def create_sale(db: Session, payload: SaleCreate) -> Sale:
     db.add(sale); db.commit(); db.refresh(sale)
     _detect_anomalies(db, sale)
     logger.info("Sale recorded: #%s total=%.2f status=%s", sale.id, sale.total, sale.status)
+
+    sales_total.inc()
+    if sale.status == "completed":
+        revenue_total.inc(sale.total)
+    elif sale.status == "refunded":
+        refunds_total.inc()
     return sale
 
 def record_scan_sale(db: Session, product: StockItem, *,

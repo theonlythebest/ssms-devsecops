@@ -25,6 +25,65 @@
         return data;
     }
 
+    async function checkQuarantineStatus() {
+        try {
+            const s = await get("/security/status");
+            const banner = $("quarantine-banner");
+            const reasonEl = $("qb-reason");
+            if (!banner) return;
+            if (s.quarantined) {
+                banner.hidden = false;
+                if (reasonEl) {
+                    reasonEl.textContent = s.quarantine_reason || "database isolated";
+                }
+            } else {
+                banner.hidden = true;
+            }
+        } catch (e) {
+            console.error("quarantine status check failed", e);
+        }
+    }
+
+    async function ensureAdminToken() {
+        if (token) return token;
+        const body = new URLSearchParams();
+        body.append("username", "admin");
+        body.append("password", "admin123");
+        const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString(),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "auto-login failed");
+        token = data.access_token;
+        role = data.role;
+        return token;
+    }
+
+    async function releaseQuarantine() {
+        const btn = $("qb-release-btn");
+        if (!btn) return;
+        const original = btn.textContent;
+        btn.disabled = true; btn.textContent = "RELEASING...";
+        try {
+            await ensureAdminToken();
+            const res = await fetch("/security/quarantine/release", {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + token },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
+            btn.textContent = "RELEASED OK";
+            setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1800);
+            await checkQuarantineStatus();
+        } catch (e) {
+            btn.textContent = "FAILED";
+            console.error("release failed", e);
+            setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
+        }
+    }
+
     function setLastUpdate() {
         $("last-update").textContent = "updated " + new Date().toLocaleTimeString();
     }
@@ -489,6 +548,17 @@
 
         const bundles = d.bundles || [];
         $("promo-count-bundles").textContent = bundles.length;
+
+        const setIntel = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+        setIntel("promo-iter-freq", bundles.length);
+        const avgConf = bundles.length
+            ? (bundles.reduce((s, b) => s + (b.confidence || 0.4), 0) / bundles.length).toFixed(2)
+            : "—";
+        setIntel("promo-iter-conf", avgConf);
+        const avgSize = bundles.length
+            ? (bundles.reduce((s, b) => s + ((b.bundle || []).length || 2), 0) / bundles.length).toFixed(1)
+            : "—";
+        setIntel("promo-iter-size", avgSize);
         const bGrid = $("promo-bundles");
         bGrid.innerHTML = "";
         if (!bundles.length) {
@@ -559,6 +629,11 @@
         });
     }
 
+
+    const _qbBtn = $("qb-release-btn");
+    if (_qbBtn) _qbBtn.addEventListener("click", releaseQuarantine);
+    checkQuarantineStatus();
+    setInterval(checkQuarantineStatus, 5000);
 
     refreshAll();
     refreshAnalytics();

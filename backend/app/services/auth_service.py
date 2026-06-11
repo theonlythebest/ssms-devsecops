@@ -8,6 +8,7 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.models.user import User
 from app.schemas.user import TokenResponse, UserRegister
 from app.utils.logger import logger, persist_alert, security_monitor
+from app.utils.monitoring import successful_logins_total
 
 def register_user(db: Session, payload: UserRegister) -> User:
     """Create a new user, rejecting duplicate username/email."""
@@ -51,5 +52,6 @@ def authenticate(db: Session, username: str, password: str) -> TokenResponse:
             db, "auth", "info", f"Admin login: '{user.username}'"
         )
 
+    successful_logins_total.inc()
     token = create_access_token(subject=user.username, role=user.role)
     return TokenResponse(access_token=token, role=user.role, username=user.username)

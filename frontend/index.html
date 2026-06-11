@@ -135,10 +135,10 @@
             border: 1px solid var(--border);
         }
         .soc-cat-security { color: #ef4444; background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.4); }
-        .soc-cat-auth     { color: #fbbf24; background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.4); }
+        .soc-cat-auth     { color: #4fc3f7; background: rgba(79,195,247,.10); border-color: rgba(79,195,247,.4); }
         .soc-cat-anomaly  { color: #f59e0b; background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.4); }
         .soc-cat-barcode  { color: #a78bfa; background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.4); }
-        .soc-cat-system   { color: #4fc3f7; background: rgba(79,195,247,.10); border-color: rgba(79,195,247,.4); }
+        .soc-cat-system   { color: #22c55e; background: rgba(34,197,94,.10); border-color: rgba(34,197,94,.4); }
 
         .promo-section { margin-top: 18px; }
         .promo-section:first-child { margin-top: 0; }
@@ -581,6 +581,16 @@
     </style>
 </head>
 <body>
+    <div class="classification-bar">
+        <span class="left">
+            <span class="dot"></span>
+            <span>SSMS // TACTICAL OPERATIONS CENTER // CLASSIFIED-SIM</span>
+        </span>
+        <span class="right">
+            <span id="clf-clock">--:--:-- UTC</span>
+            <span>OPCON: NORMAL</span>
+        </span>
+    </div>
     <header class="topbar">
         <div class="brand">
             <span class="logo">SSMS</span>
@@ -592,6 +602,18 @@
             <span id="last-update" class="muted">updated --:--:--</span>
         </div>
     </header>
+
+    <div id="quarantine-banner" class="quarantine-banner" hidden>
+        <div class="qb-left">
+            <span class="qb-pulse"></span>
+            <span class="qb-label">SOC QUARANTINE ACTIVE</span>
+            <span class="qb-reason" id="qb-reason">database isolated</span>
+        </div>
+        <div class="qb-right">
+            <span class="qb-help">All write operations are blocked. Click to release.</span>
+            <button type="button" id="qb-release-btn">RELEASE QUARANTINE</button>
+        </div>
+    </div>
 
     <main>
         <section class="grid kpi-grid">
@@ -712,18 +734,59 @@
             </div>
         </section>
 
-        <section class="card promotions-card">
-            <h2>Promotions intelligence <span class="hint" style="margin-left:8px;">discounts + bundles - every 15s</span></h2>
+        <section class="card promotions-card cctv-fused">
+            <h2>Promotions intelligence <span class="hint" style="margin-left:8px;">market-basket analysis + dynamic discount engine - refresh 15s</span></h2>
+
+            <details class="cctv-intel-collapse" open>
+                <summary>
+                    <span class="intel-summary-label">Pricing logic</span>
+                    <span class="intel-summary-hint">how the system decides what to discount and bundle - click to fold</span>
+                </summary>
+                <div class="cctv-intel-grid">
+                    <div class="intel-block">
+                        <div class="intel-title">Discount thresholds</div>
+                        <div class="intel-sub">days-until-expiry triggers</div>
+                        <ul class="intel-list">
+                            <li class="sev-row sev-alert"><span class="sig-name">URGENT</span><span class="sig-pts">≤ 1 day</span><span class="sig-meta">50% off</span></li>
+                            <li class="sev-row sev-suspect"><span class="sig-name">SOON</span><span class="sig-pts">2-3 days</span><span class="sig-meta">30% off</span></li>
+                            <li class="sev-row sev-watch"><span class="sig-name">CALM</span><span class="sig-pts">4-7 days</span><span class="sig-meta">15% off</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="intel-block">
+                        <div class="intel-title">Bundle algorithm</div>
+                        <div class="intel-sub">market-basket co-occurrence</div>
+                        <ul class="intel-list">
+                            <li><span class="sig-name">Frequent itemsets</span><span class="sig-pts">≥ 3 baskets</span><span class="sig-count" id="promo-iter-freq">0</span></li>
+                            <li><span class="sig-name">Association strength</span><span class="sig-pts">conf ≥ 0.4</span><span class="sig-count" id="promo-iter-conf">0</span></li>
+                            <li><span class="sig-name">Avg basket size</span><span class="sig-pts">live</span><span class="sig-count" id="promo-iter-size">0</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="intel-block">
+                        <div class="intel-title">Loss prevention impact</div>
+                        <div class="intel-sub">discount → revenue recovered</div>
+                        <ul class="intel-list">
+                            <li class="verdict-row v-tp"><span class="sig-name">PREVENTED LOSS</span><span class="sig-meta">expiry markdown saved</span></li>
+                            <li class="verdict-row v-fp"><span class="sig-name">CROSS-SELL UPLIFT</span><span class="sig-meta">bundle margin gain</span></li>
+                            <li class="verdict-row v-gray"><span class="sig-name">MANUAL CURATION</span><span class="sig-meta">low-confidence items - human review</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+
+            <div class="cctv-section-divider"><span class="divider-label">Suggested discounts</span></div>
             <div class="promo-section">
                 <div class="promo-section-header">
-                    <span class="promo-section-title">Suggested discounts</span>
+                    <span class="promo-section-title">Items approaching expiry</span>
                     <span id="promo-count-discounts" class="promo-count-pill">0</span>
                 </div>
                 <div id="promo-discounts" class="promo-grid"></div>
             </div>
+            <div class="cctv-section-divider"><span class="divider-label">Bundle recommendations</span></div>
             <div class="promo-section">
                 <div class="promo-section-header">
-                    <span class="promo-section-title">Bundle recommendations</span>
+                    <span class="promo-section-title">Frequently bought together</span>
                     <span id="promo-count-bundles" class="promo-count-pill">0</span>
                 </div>
                 <div id="promo-bundles" class="promo-grid"></div>
@@ -736,5 +799,20 @@
     </footer>
 
     <script src="/static/app.js"></script>
+    <script>
+        (function tickClock() {
+            var el = document.getElementById("clf-clock");
+            if (!el) return;
+            function tick() {
+                var d = new Date();
+                var hh = String(d.getUTCHours()).padStart(2, "0");
+                var mm = String(d.getUTCMinutes()).padStart(2, "0");
+                var ss = String(d.getUTCSeconds()).padStart(2, "0");
+                el.textContent = hh + ":" + mm + ":" + ss + " UTC";
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
 </body>
 </html>

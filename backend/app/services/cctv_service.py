@@ -12,6 +12,11 @@ from app.models.cctv import CCTVEvent
 from app.models.inventory_log import InventoryLog
 from app.schemas.cctv import CCTVEventCreate, LayoutSuggestion, ZoneStat
 from app.utils.logger import logger, persist_alert
+from app.utils.monitoring import (
+    cctv_events_total, cctv_intrusions_total, cctv_watch_total,
+    cctv_suspect_total, cctv_auto_tp_total, cctv_auto_fp_total,
+    cctv_grey_zone_total,
+)
 
 CROWDED_THRESHOLD = 20                             
 SPIKE_FACTOR = 2.5                                 
@@ -21,6 +26,21 @@ def record_event(db: Session, payload: CCTVEventCreate) -> CCTVEvent:
     db.add(event)
     db.commit()
     db.refresh(event)
+
+    score = event.activity_score or 0
+    note  = (event.note or "").upper()
+    if score >= 80 or "INTRUSION" in note or "ALERT" in note:
+        severity = "alert"
+        cctv_intrusions_total.inc()
+    elif score >= 60 or "SUSPECT" in note:
+        severity = "suspect"
+        cctv_suspect_total.inc()
+    elif score >= 30 or "WATCH" in note:
+        severity = "watch"
+        cctv_watch_total.inc()
+    else:
+        severity = "info"
+    cctv_events_total.labels(severity=severity, zone=event.zone or "general").inc()
 
     if event.people_count >= CROWDED_THRESHOLD:
         persist_alert(
@@ -165,6 +185,7 @@ def auto_verdict_recent(db: Session, limit: int = 80) -> dict:
                 "confidence": round(min(0.95, 0.70 + 0.05 * total_lost), 2),
                 "reason": f"Stock loss detected: {total_lost} unit(s) adjusted in window",
             }
+            cctv_auto_tp_total.inc()
             continue
 
         score = e.activity_score or 0
@@ -174,12 +195,14 @@ def auto_verdict_recent(db: Session, limit: int = 80) -> dict:
                 "confidence": 0.30,
                 "reason": "Critical score but no stock loss yet -- needs review",
             }
+            cctv_grey_zone_total.inc()
         elif score >= 60:
             out[e.id] = {
                 "verdict": "unknown",
                 "confidence": 0.40,
                 "reason": "Suspect-level score with no inventory correlation -- manual check",
             }
+            cctv_grey_zone_total.inc()
         elif score >= 30:
             note = "No stock impact in window"
             if sells:
@@ -189,5 +212,6 @@ def auto_verdict_recent(db: Session, limit: int = 80) -> dict:
                 "confidence": 0.70 if any_move else 0.85,
                 "reason": note,
             }
+            cctv_auto_fp_total.inc()
 
     return out
