@@ -188,10 +188,10 @@ ansible-playbook playbook.yml  # configure tout
 
 ## Compétences mises en œuvre
 
-- **Cybersécurité** : authentification JWT, RBAC admin/employee, middleware SOC (détection write-burst + auth-flood → quarantaine HTTP 503), vidéosurveillance GDPR-safe (zéro stockage facial, juste des keypoints squelette), SARIF reporting, CVE scanning (Trivy, pip-audit), gestion des secrets via `.env` + `.gitignore`, hardening conteneurs (`cap_drop`, `no-new-privileges`, non-root)
-- **DevOps / IaC** : Docker multi-stage non-root, Terraform AWS (VPC, SG, EC2, EIP), Ansible (3 rôles idempotents avec UFW), GitHub Actions (matrix builds + cache), healthchecks Docker, double pare-feu (Security Group + UFW)
-- **Backend** : FastAPI async, SQLAlchemy 2.x ORM, Pydantic v2, instrumentation Prometheus, JWT + bcrypt, middlewares custom (monitoring + SOC)
-- **Computer Vision** : YOLOv8-pose detection (17 keypoints squelette), ByteTrack persistent tracking (ID stable ~30s), scoring comportemental multi-signaux (loitering / accroupissement / main vers la poche / fuite), zones polygonales avec `cv2.pointPolygonTest`
-- **Frontend** : Vanilla JS (zéro framework), CSS variables + animations, dashboard tactique, `localStorage` pour persistance des reviews CCTV
-- **SRE / Observability** : 44 métriques Prometheus custom (compteurs business + sécurité + perf), Grafana auto-provisionné (datasource + dashboard JSON versionnés en Git), SLI / SLO basics (latence p50 / p95 / p99), gauge System Health Score composite, scrape interval 5s
+- **Cybersécurité** : JWT + RBAC, middleware SOC (write-burst + auth-flood → quarantaine), CVE scanning (Trivy + pip-audit), hardening conteneurs (non-root, `cap_drop`)
+- **DevOps / IaC** : Docker multi-stage, Terraform AWS, Ansible (3 rôles), GitHub Actions, double pare-feu (Security Group + UFW)
+- **Backend** : FastAPI async, SQLAlchemy 2.x, Pydantic v2, instrumentation Prometheus, JWT + bcrypt
+- **Computer Vision** : YOLOv8-pose (17 keypoints), ByteTrack, scoring comportemental multi-signaux, zones polygonales OpenCV
+- **Frontend** : Vanilla JS, CSS variables + animations, dashboard tactique custom
+- **SRE / Observability** : 44 métriques Prometheus, Grafana auto-provisionné, SLI latence p50/p95/p99
 
