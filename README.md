@@ -182,8 +182,6 @@ ansible-playbook playbook.yml  # configure tout
 
 ## Architecture
 
-```
-
 <img width="1046" height="922" alt="image" src="https://github.com/user-attachments/assets/b00a3f5a-7db8-4a4a-aae6-618d5daa6abf"/>
 
 ---
